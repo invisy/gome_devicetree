@@ -1,47 +1,6 @@
 #include <generated/autoconf.h>
 /dts-v1/;
 
-/ {
-	aw87319_pa {
-		compatible = "awinic,aw87319_pa";
-		pinctrl-names = "default", "aw87319_rst_high", "aw87319_rst_low";
-		pinctrl-0 = <0x32>;
-		pinctrl-1 = <0x33>;
-		pinctrl-2 = <0x34>;
-		status = "okay";
-	};
-
-	pinctrl@10005000 {
-		aw87319_default {
-				linux,phandle = <0x32>;
-				phandle = <0x32>;
-			};
-
-			aw87319_rst_ouput1 {
-				linux,phandle = <0x33>;
-				phandle = <0x33>;
-
-				pins_cmd_dat {
-					pins = <0x3700>;
-					slew-rate = <0x1>;
-					output-high;
-				};
-			};
-
-			aw87319_rst_ouput0 {
-				linux,phandle = <0x34>;
-				phandle = <0x34>;
-
-				pins_cmd_dat {
-					pins = <0x3700>;
-					slew-rate = <0x1>;
-					output-low;
-				};
-			};
-	};
-
-};
-
 #ifdef CONFIG_MTK_DTBO_FEATURE
 /plugin/;
 #include <dt-bindings/interrupt-controller/irq.h>
@@ -91,14 +50,14 @@
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
-		led_mode = <0>;
+		led_mode = <3>;
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
@@ -258,20 +217,62 @@
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 400>;
 		/* ACCDET GPIO standardization ACC mode no use */
-        pinctrl-names = "default", "state_eint_as_int";
-        pinctrl-0 = <&accdet_pins_default>;
-        pinctrl-1 = <&accdet_pins_eint_as_int>;
+		pinctrl-names = "default", "usbsel_high", "usbsel_low", "hjacksel_high", "hjacksel_low";
+		pinctrl-0 = <0x1e>;
+		pinctrl-1 = <0x2e>;
+		pinctrl-2 = <0x2f>;
+		pinctrl-3 = <0x30>;
+		pinctrl-4 = <0x31>;
 };
 &pio {
-	accdet_pins_default: accdetdefault {
-	};
-	accdet_pins_eint_as_int: accdet@0 {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
-			slew-rate = <0>;
-			bias-disable;
+		default {
+			linux,phandle = <0x1e>;
+			phandle = <0x1e>;
 		};
-	};
+
+		accdet_pins@0 {
+			linux,phandle = <0x2e>;
+			phandle = <0x2e>;
+
+			pins_cmd_dat {
+				pins = <0xc00>;
+				slew-rate = <0x1>;
+				output-high;
+			};
+		};
+
+		accdet_pins@1 {
+			linux,phandle = <0x2f>;
+			phandle = <0x2f>;
+
+			pins_cmd_dat {
+				pins = <0xc00>;
+				slew-rate = <0x1>;
+				output-low;
+			};
+		};
+
+		accdet_pins@2 {
+			linux,phandle = <0x30>;
+			phandle = <0x30>;
+
+			pins_cmd_dat {
+				pins = <0xb00>;
+				slew-rate = <0x1>;
+				output-high;
+			};
+		};
+
+		accdet_pins@3 {
+			linux,phandle = <0x31>;
+			phandle = <0x31>;
+
+			pins_cmd_dat {
+				pins = <0xb00>;
+				slew-rate = <0x1>;
+				output-low;
+			};
+		};
 };
 /* accdet end*/
 
@@ -325,9 +326,7 @@
 			"aud_smartpa_reset",
 			"aud_smartpa_on",
 			"aud_clk_mosi_pull_high",
-			"aud_clk_mosi_pull_low",
-			"extamp-pullhigh",
-			"extamp-pulllow";
+			"aud_clk_mosi_pull_low";
 	pinctrl-0 = <&aud_clk_mosi_off>;
 	pinctrl-1 = <&aud_clk_mosi_on>;
 	pinctrl-2 = <&aud_dat_mosi_off>;
@@ -340,8 +339,6 @@
 	pinctrl-9 = <&aud_pins_smartpa_on>;
 	pinctrl-10 = <&aud_clk_mosi_pull_high>;
 	pinctrl-11 = <&aud_clk_mosi_pull_low>;
-	pinctrl-12 = <&aud_extamp_pull_high>;
-	pinctrl-13 = <&aud_extamp_pull_low>;
 	status = "okay";
 };
 
@@ -432,22 +429,6 @@
 	aud_clk_mosi_pull_low: aud_clk_mosi_pull_low {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO149__FUNC_GPIO149>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-	
-    aud_extamp_pull_high: aud_extamp_pull_high {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO20__FUNC_GPIO20>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-	
-    aud_extamp_pull_low: aud_extamp_pull_low {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO20__FUNC_GPIO20>;
 			slew-rate = <1>;
 			output-low;
 		};
@@ -948,11 +929,6 @@
 	rt,intr_gpio_num = <101>; /* direct defined GPIO num */
 	rt,intr_gpio = <&pio 101 0x0>;
 };
-&rt5081_typec {
-	rt5081pd,intr_gpio_num = <8>; /* direct defined GPIO num */
-	rt5081pd,intr_gpio = <&pio 8 0x0>;
-};
-
 
 &i2c1 {
 
@@ -1008,6 +984,32 @@
 		is_batch_supported_ps = <0>;
 		is_batch_supported_als = <0>;
 	};
+};
+
+&aw87319_pa {
+	pinctrl-names = "aw87319_rst_high",
+			"aw87319_rst_low";
+	pinctrl-0 = <&aw87319_rst_high>;
+	pinctrl-1 = <&aw87319_rst_low>;
+	status = "okay";
+};
+&pio {
+    aw87319_rst_high: aw87319_rst_high{
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO55__FUNC_GPIO55>;
+            slew-rate = <1>;
+            output-high;
+        };
+    };
+
+    /*add by longcheer_liml_2016_02_22*/
+    aw87319_rst_low: aw87319_rst_low{
+        pins_cmd_dat {
+            pins = <PINMUX_GPIO55__FUNC_GPIO55>;
+            slew-rate = <1>;
+            output-low;
+        };
+    };
 };
 
 #include <tk6757_66_n1/cust.dtsi>

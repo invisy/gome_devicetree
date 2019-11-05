@@ -24,13 +24,13 @@ PRODUCT_LOCALES:=ru_RU en_US
 
 
 # Set those variables here to overwrite the inherited values.
-PRODUCT_MANUFACTURER := Santin
+PRODUCT_MANUFACTURER := Gome
 PRODUCT_NAME := full_tk6757_66_n1
 PRODUCT_DEVICE := tk6757_66_n1
-PRODUCT_MODEL := Santin_N1
+PRODUCT_MODEL := Gome_U7
 PRODUCT_POLICY := android.policy_phone
-PRODUCT_BRAND := Santin
-TARGET_OTA_ASSERT_DEVICE := N1
+PRODUCT_BRAND := Gome
+TARGET_OTA_ASSERT_DEVICE := U7
 
 ifeq ($(TARGET_BUILD_VARIANT), eng)
 KERNEL_DEFCONFIG ?= tk6757_66_n1_debug_defconfig

@@ -93,10 +93,12 @@
 #include "../../../../drivers/misc/mediatek/auxadc/mt6755/mt_auxadc_sw.h"
 #endif
 
-#ifdef CONFIG_LCT_AW87319_PA
+/* Speaker fix */
+#ifdef CONFIG_MTK_AWINIC_AW87319_AUDIO
 extern unsigned char AW87319_Audio_Speaker(void);
 extern unsigned char AW87319_Audio_OFF(void);
 #endif
+/* End Speaker fix */
 
 /* static function declaration */
 static bool get_analog_input_status(void);
@@ -3226,6 +3228,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 			AudDrv_GPIO_EXTAMP2_Select(true, 3);
 #endif
 #endif				/*CONFIG_MTK_LEGACY */
+/* Speaker fix */
+#ifdef CONFIG_MTK_AWINIC_AW87319_AUDIO
+	AW87319_Audio_Speaker();
+#endif
+/* End Speaker fix */
 		msleep(SPK_WARM_UP_TIME);
 #endif
 		pr_debug("Ext_Speaker_Amp_Change ON-\n");
@@ -3243,6 +3250,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 		udelay(500);
 #endif
+/* Speaker fix */
+	#ifdef CONFIG_MTK_AWINIC_AW87319_AUDIO
+		AW87319_Audio_OFF();
+	#endif
+/* End Speaker fix */
 		pr_debug("Ext_Speaker_Amp_Change OFF-\n");
 	}
 #endif
@@ -3784,6 +3796,10 @@ static const struct snd_kcontrol_new mt6331_snd_Speaker_controls[] = {
 		     Audio_Speaker_Enum[4],
 		     Audio_Speaker_Current_Sensing_Peak_Detector_Get,
 		     Audio_Speaker_Current_Sensing_Peak_Detector_Set),
+	SOC_SINGLE_EXT("Codec_ADC_SampleRate", SND_SOC_NOPM, 0, MAX_UL_SAMPLE_RATE, 0,
+			codec_adc_sample_rate_get, codec_adc_sample_rate_set),
+	SOC_SINGLE_EXT("Codec_DAC_SampleRate", SND_SOC_NOPM, 0, MAX_DL_SAMPLE_RATE, 0,
+			codec_dac_sample_rate_get, codec_dac_sample_rate_set),
 };
 
 int Audio_AuxAdcData_Get_ext(void)

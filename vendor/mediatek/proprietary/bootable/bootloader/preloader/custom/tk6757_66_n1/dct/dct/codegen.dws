@@ -65,9 +65,9 @@
             <eint3>
                 <varName>MSDC1_INS</varName>
                 <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Edge</sensitive_level>
-                <debounce_en>Disable</debounce_en>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
             </eint3>
             <eint4>
                 <varName>GYRO</varName>

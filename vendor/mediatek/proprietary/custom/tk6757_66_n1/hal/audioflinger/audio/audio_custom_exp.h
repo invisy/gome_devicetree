@@ -126,7 +126,7 @@
 //#define USING_CLASSAB_AMP
 
 #define EXT_SPK_SUPPORT
-#define USING_EXTAMP_HP                    // define output for EXTAMP
+//#define USING_EXTAMP_HP                    // define output for EXTAMP
 
 /******************************************************************
 ** define chip delay for NXP

@@ -1,16 +1,17 @@
 # Release name
-# PRODUCT_RELEASE_NAME := Santin_N1
+# PRODUCT_RELEASE_NAME := Gome_U7
 
 RECOVERY_VARIANT := twrp
 INTERNAL_LOCAL_CLANG_EXCEPTION_PROJECTS := external/busybox/
 TARGET_RECOVERY_PIXEL_FORMAT := RGBA_8888
 TARGET_RECOVERY_FSTAB := device/mediateksample/tk6757_66_n1/twrp.fstab
-TW_CUSTOM_THEME := device/mediateksample/tk6757_66_n1/TW_theme
+#TW_CUSTOM_THEME := device/mediateksample/tk6757_66_n1/TW_theme
+TW_THEME := portrait_mdpi
 TW_EXCLUDE_SUPERSU := true
 TW_INCLUDE_INJECTTWRP := false
-TW_DEVICE_VERSION := OREO by hyperion70
+TW_DEVICE_VERSION := OREO for Gome
 TW_USE_MODEL_HARDWARE_ID_FOR_DEVICE_ID := true
-TW_DEFAULT_LANGUAGE := ru
+TW_DEFAULT_LANGUAGE := en
 RECOVERY_SDCARD_ON_DATA := true
 TW_DEFAULT_EXTERNAL_STORAGE := true
 TW_BRIGHTNESS_PATH := /sys/class/leds/lcd-backlight/brightness

@@ -18,12 +18,12 @@
 		rt-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
 		rt-tcpc,vconn_supply  = <1>;  /* 0: Never, 1: Always, 2: EMarkOnly, 3: StartOnly */
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-		rt-tcpc,notifier_supply_num = <3>; /* the number of notifier supply */
+		rt-tcpc,notifier_supply_num = <2>; /* the number of notifier supply */
 #else
 		rt-tcpc,notifier_supply_num = <2>; /* the number of notifier supply */
 #endif
-		rt5081pd,intr_gpio = <&pio 24 0x0>;
-		rt5081pd,intr_gpio_num = <24>;
+		rt5081pd,intr_gpio = <&pio 8 0x0>;
+		rt5081pd,intr_gpio_num = <8>;
 
 		pd-data {
 			pd,vid = <0x29cf>;

@@ -65,9 +65,9 @@
             <eint3>
                 <varName>MSDC1_INS</varName>
                 <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Edge</sensitive_level>
-                <debounce_en>Disable</debounce_en>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
             </eint3>
             <eint4>
                 <varName>GYRO</varName>
@@ -2173,11 +2173,6 @@
                 <channel>I2C_CHANNEL_1</channel>
                 <address>0x51</address>
             </device5>
-            <device6>
-                <varName>SPEAKER_AMP</varName>
-                <channel>I2C_CHANNEL_1</channel>
-                <address>0x34</address>
-            </device6>
             <device7>
                 <varName>GYRO</varName>
                 <channel>I2C_CHANNEL_1</channel>
@@ -2248,6 +2243,11 @@
                 <channel>I2C_CHANNEL_8</channel>
                 <address>0x43</address>
             </device23>
+	    <device24>
+                <varName>SPEAKER_AMP</varName>
+                <channel>I2C_CHANNEL_1</channel>
+                <address>0x58</address>
+            </device24>
         </module>
         <module name="md1_eint">
             <count>4</count>
