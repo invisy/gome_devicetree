@@ -161,6 +161,37 @@ struct compat_biometric_threshold {
 #define	COMPAT_ECS_IOCTL_GET_LAYOUT_09911	   _IOR(MSENSOR, 0x31, char)
 #endif
 
+/* IOCTLs for QMCX983 device */
+
+#define QMC_IOCTL_WRITE                 _IOW(MSENSOR, 0x40, char*)
+#define QMC_IOCTL_READ                  _IOWR(MSENSOR, 0x41, char*)
+#define QMC_IOCTL_RESET                 _IO(MSENSOR, 0x42)
+#define QMC_IOCTL_SET_MODE              _IOW(MSENSOR, 0x43, short)
+#define QMC_IOCTL_GETDATA               _IOR(MSENSOR, 0x44, char[SENSOR_DATA_SIZE])
+#define QMC_IOCTL_SET_YPR               _IOW(MSENSOR, 0x45, short[28])
+#define QMC_IOCTL_GET_OPEN_STATUS       _IOR(MSENSOR, 0x46, int)
+#define QMC_IOCTL_GET_CLOSE_STATUS      _IOR(MSENSOR, 0x47, int)
+#define QMC_IOC_GET_MFLAG               _IOR(MSENSOR, 0x48, int)
+#define QMC_IOC_GET_OFLAG               _IOR(MSENSOR, 0x49, int)
+#define QMC_IOCTL_GET_DELAY             _IOR(MSENSOR, 0x4a, short)
+
+#ifdef CONFIG_COMPAT
+/* compat IOCTLs for QMCX983 device */
+
+#define COMPAT_QMC_IOCTL_WRITE                 _IOW(MSENSOR, 0x40, compat_uptr_t)
+#define COMPAT_QMC_IOCTL_READ                  _IOWR(MSENSOR, 0x41, compat_uptr_t)
+#define COMPAT_QMC_IOCTL_RESET                 _IO(MSENSOR, 0x42)
+#define COMPAT_QMC_IOCTL_SET_MODE              _IOW(MSENSOR, 0x43, compat_short_t)
+#define COMPAT_QMC_IOCTL_GETDATA               _IOR(MSENSOR, 0x44, char[SENSOR_DATA_SIZE])
+#define COMPAT_QMC_IOCTL_SET_YPR               _IOW(MSENSOR, 0x45, compat_short_t[28])
+#define COMPAT_QMC_IOCTL_GET_OPEN_STATUS       _IOR(MSENSOR, 0x46, compat_int_t)
+#define COMPAT_QMC_IOCTL_GET_CLOSE_STATUS      _IOR(MSENSOR, 0x47, compat_int_t)
+#define COMPAT_QMC_IOC_GET_MFLAG               _IOR(MSENSOR, 0x48, compat_int_t)
+#define COMPAT_QMC_IOC_GET_OFLAG               _IOR(MSENSOR, 0x49, compat_int_t)
+#define COMPAT_QMC_IOCTL_GET_DELAY             _IOR(MSENSOR, 0x4a, compat_short_t)
+
+#endif
+
 #define ALSPS							0X84
 #define ALSPS_SET_PS_MODE				_IOW(ALSPS, 0x01, int)
 #define ALSPS_GET_PS_MODE				_IOR(ALSPS, 0x02, int)

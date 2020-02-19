@@ -3796,10 +3796,6 @@ static const struct snd_kcontrol_new mt6331_snd_Speaker_controls[] = {
 		     Audio_Speaker_Enum[4],
 		     Audio_Speaker_Current_Sensing_Peak_Detector_Get,
 		     Audio_Speaker_Current_Sensing_Peak_Detector_Set),
-	SOC_SINGLE_EXT("Codec_ADC_SampleRate", SND_SOC_NOPM, 0, MAX_UL_SAMPLE_RATE, 0,
-			codec_adc_sample_rate_get, codec_adc_sample_rate_set),
-	SOC_SINGLE_EXT("Codec_DAC_SampleRate", SND_SOC_NOPM, 0, MAX_DL_SAMPLE_RATE, 0,
-			codec_dac_sample_rate_get, codec_dac_sample_rate_set),
 };
 
 int Audio_AuxAdcData_Get_ext(void)

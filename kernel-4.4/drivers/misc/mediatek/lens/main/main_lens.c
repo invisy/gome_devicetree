@@ -90,6 +90,10 @@ static struct stAF_OisPosInfo OisPosInfo;
 /* ------------------------- */
 
 static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
+	#ifdef CONFIG_MTK_LENS_DW9714VAF_SUPPORT
+	{1, AFDRV_DW9714VAF, DW9714VAF_SetI2Cclient, DW9714VAF_Ioctl, DW9714VAF_Release, NULL},
+	#endif
+
 	{1, AFDRV_AK7371AF, AK7371AF_SetI2Cclient, AK7371AF_Ioctl, AK7371AF_Release, NULL},
 	{1, AFDRV_BU6424AF, BU6424AF_SetI2Cclient, BU6424AF_Ioctl, BU6424AF_Release, NULL},
 	{1, AFDRV_BU6429AF, BU6429AF_SetI2Cclient, BU6429AF_Ioctl, BU6429AF_Release, NULL},

@@ -63,6 +63,15 @@ extern int BU63169AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 extern int BU63169AF_PowerDown(void);
 #endif
 
+#ifdef CONFIG_MTK_LENS_DW9714VAF_SUPPORT
+#define DW9714VAF_SetI2Cclient DW9714VAF_SetI2Cclient_Main
+#define DW9714VAF_Ioctl DW9714VAF_Ioctl_Main
+#define DW9714VAF_Release DW9714VAF_Release_Main
+extern int DW9714VAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9714VAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int DW9714VAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
+#endif
+
 #define DW9714AF_SetI2Cclient DW9714AF_SetI2Cclient_Main
 #define DW9714AF_Ioctl DW9714AF_Ioctl_Main
 #define DW9714AF_Release DW9714AF_Release_Main

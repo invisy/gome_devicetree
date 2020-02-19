@@ -613,10 +613,6 @@
 		compatible = "mediatek,mt-charger";
 	};
 
-	swtp: swtp {
-		compatible = "mediatek, swtp-eint";
-	};
-
 	pmic_clock_buffer_ctrl:pmic_clock_buffer {
 		compatible = "mediatek,pmic_clock_buffer";
 		mediatek,clkbuf-quantity = <4>;
@@ -1666,6 +1662,15 @@
 		clocks = <&infrasys INFRACFG_AO_I2C4_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
+
+		bcm2079x@76 {
+			compatible = "nfc,bcm2079x-i2c";
+			irq-gpio = <&pio 0x52 0x00>;
+			en-gpio = <&pio 0x53 0x1>;
+			wake-gpio = <&pio 0x5a 0x00>;
+			reg = <0x76>;
+			status = "okay";
+		};
 	};
 
 	spi1: spi@11010000 {
@@ -3118,12 +3123,18 @@
 
 	gyro: gyro {
 		compatible = "mediatek, gyro-eint";
-		status = "disabled";
+		status = "okay";
+		interrupt-parent = <&eintc>;
+		interrupts = <0x0 0x8>;
+		debounce = <0x0 0x0>;
 	};
 
 	mse: mse {
 		compatible = "mediatek, mse-eint";
-		status = "disabled";
+		status = "okay";
+		interrupt-parent = <&eintc>;
+		interrupts = <0x56 0x2>;
+		debounce = <0x56 0x0>;
 	};
 
 	eint_fusb300_det_in: eint_fusb300_det_in {
