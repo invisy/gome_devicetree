@@ -122,4 +122,3 @@ extern int icm206xx_share_SetSampleRate(int sensor_type, u64 delay_ns, bool forc
 /*----------------------------------------------------------------------------*/
 
 #endif /* ICM206XX_SHARE_H */
-

@@ -14,9 +14,9 @@
  *
  */
 
-#include "../../drivers/misc/mediatek/sensors-1.0/hwmon/include/hwmsensor.h"
-#include "../../drivers/misc/mediatek/sensors-1.0/accelerometer/inc/cust_acc.h"
-#include "../../drivers/misc/mediatek/sensors-1.0/accelerometer/inc/accel.h"
+#include <hwmsensor.h>
+#include "cust_acc.h"
+#include "accel.h"
 #include "icm206xx_register_20608D.h"
 #include "icm206xx_share.h"
 
@@ -289,6 +289,8 @@ static int icm206xx_SetPowerMode(struct i2c_client *client, int sensor_type, boo
 			databuf[0] |= ICM206XX_BIT_SLEEP;
 		}
 	}
+	else
+		databuf[0] |= 1;
 
 	res = icm206xx_share_i2c_write_register(ICM206XX_REG_PWR_CTL, databuf, 1);
 	if (res < 0) {
@@ -296,10 +298,8 @@ static int icm206xx_SetPowerMode(struct i2c_client *client, int sensor_type, boo
 		return ICM206XX_ERR_I2C;
 	}
 
-	if(enable == true)
-	{
-		mdelay(5);
-	}
+	mdelay(5);
+
 	ACC_LOG("set power mode ok %d!\n", enable);
 
 	return ICM206XX_SUCCESS;
@@ -398,7 +398,7 @@ static int icm206xx_SetSampleRate(struct i2c_client *client, int sensor_type, u6
 	/*	Actual Delay of Accel : 10ms (100hz)		*/
 	/*	Actual Delay of Gyro : 2ms (500hz)		*/
 	/* ---------------------------------------------------- */
-//	sample_rate = (int)(delay_ns / 1000);		/* ns to us */
+	sample_rate = (int)(delay_ns / 1000);		/* ns to us */
 	sample_rate = (int)(sample_rate / 1000);	/* us to ms */
 
 	sample_rate = (int)(1000 / sample_rate);	/* ns to hz */
@@ -505,5 +505,3 @@ int icm206xx_share_SetSampleRate(int sensor_type, u64 delay_ns, bool force_1khz)
 }
 EXPORT_SYMBOL(icm206xx_share_SetSampleRate);
 /*----------------------------------------------------------------------------*/
-
-
