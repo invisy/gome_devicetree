@@ -1,4 +1,3 @@
-
 config MTK_ICM206XX_A
 	bool "ICM206XX for MediaTek package"
 	default n

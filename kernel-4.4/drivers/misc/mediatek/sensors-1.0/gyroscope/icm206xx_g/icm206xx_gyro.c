@@ -1127,7 +1127,6 @@ static int icm206xx_gyro_i2c_probe(struct i2c_client *client, const struct i2c_d
 	struct gyro_control_path ctl = {0};
 	struct gyro_data_path data = {0};
 	int res = 0;
-
 	obj = devm_kzalloc(&client->dev, sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		res = -ENOMEM;
@@ -1146,11 +1145,6 @@ static int icm206xx_gyro_i2c_probe(struct i2c_client *client, const struct i2c_d
 		goto exit;
 	}
 
-	if (0 != obj->hw.addr) {
-		client->addr = 0x68;
-		GYRO_LOG("gyro_use_i2c_addr: %x\n", client->addr);
-	}
-        client->addr = 0x68;
 	obj_i2c_data = obj;
 	obj->client = client;
 	new_client = obj->client;
@@ -1160,8 +1154,16 @@ static int icm206xx_gyro_i2c_probe(struct i2c_client *client, const struct i2c_d
 	atomic_set(&obj->suspend, 0);
 
 	icm206xx_gyro_i2c_client = new_client;
+	
+	/*res = icm206xx_share_ChipSoftReset();
+	if (res != ICM206XX_SUCCESS)
+		return res;*/
 
 	res = icm206xx_gyro_init_client(new_client, false);
+
+	if (res != ICM206XX_SUCCESS)
+		goto exit;
+	
 	if (res)
 		goto exit;
 

@@ -783,7 +783,7 @@
 
 &mtkfb {
 	pinctrl-names = "default", "mode_te_gpio", "mode_te_te", "lcm_rst_out0_gpio",
-	"lcm_rst_out1_gpio", "lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio";
+					"lcm_rst_out1_gpio", "lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio";
 	pinctrl-0 = <&mtkfb_pins_default>;
 	pinctrl-1 = <&mtkfb_pins_mode_te_gpio>;
 	pinctrl-2 = <&mtkfb_pins_mode_te_te>;
@@ -801,51 +801,32 @@
 };
 
 &i2c1 {
+	msensor@2d {
+		i2c_num = <1>;
+		i2c_addr = <0x2d 0 0 0>;
+		direction = <3>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		is_batch_supported = <0>;
+	};
 
-	gsensor@6b {
-		compatible = "mediatek,gsensor";
+	gsensor@69 {
 		i2c_num	= <1>;
-		i2c_addr = <0x6b 0 0 0>;
+		i2c_addr = <0x69 0 0 0>;
 		direction = <3>;
 		power_id = <0xffff>;
 		power_vol = <0>;
 		firlen = <16>;
 		is_batch_supported = <1>;
 	};
-
-	msensor@2c {
-		i2c_num = <1>;
-		i2c_addr = <0x2c 0 0 0>;
-		direction = <3>;
-		power_id = <0xffff>;
-		power_vol = <0>;
-		is_batch_supported = <0>;
-	};
-
-	gyro@69 {
-		compatible = "mediatek,gyro";
-		reg = <0x69>;
-		pinctrl-names = "pin_default", "pin_cfg";
-		pinctrl-0 = <&gyro_intpin_default>;
-		pinctrl-1 = <&gyro_intpin_cfg>;
-		status = "okay";
-		/* customization */
-		i2c_num = <1>;
-		i2c_addr = <0x69 0 0 0>;
-		direction = <3>;
-		power_id = <0xffff>;
-		power_vol = <0>;
-		firlen = <0>;
-		is_batch_supported = <0>;
-	};
-
-	alsps@1e {
+	
+	alsps@48 {
 		pinctrl-names = "pin_default", "pin_cfg";
 		pinctrl-0 = <&alsps_intpin_default>;
 		pinctrl-1 = <&alsps_intpin_cfg>;
 		status = "okay";
 		i2c_num = <1>;
-		i2c_addr = <0x1e 0 0 0>;
+		i2c_addr = <0x48 0 0 0>;
 		polling_mode_ps = <0>;
 		polling_mode_als = <1>;
 		power_id = <0xffff>;
@@ -857,15 +838,30 @@
 		is_batch_supported_ps = <0x0>;
 		is_batch_supported_als = <0x0>;
 	};
+
+	gyro@6c {
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&gyro_intpin_default>;
+		pinctrl-1 = <&gyro_intpin_cfg>;
+		status = "okay";
+		/* customization */
+		i2c_num = <1>;
+		i2c_addr = <0x6c 0 0 0>;
+		direction = <3>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <0>;
+		is_batch_supported = <0>;
+	};
 };
 
 &aw87319_pa {
-	pinctrl-names = "aw87319_rst_high",
-			"aw87319_rst_low";
+	pinctrl-names = "aw87319_rst_high", "aw87319_rst_low";
 	pinctrl-0 = <&aw87319_rst_high>;
 	pinctrl-1 = <&aw87319_rst_low>;
 	status = "okay";
 };
+
 &pio {
     aw87319_rst_high: aw87319_rst_high{
         pins_cmd_dat {
@@ -875,7 +871,6 @@
         };
     };
 
-    /*add by longcheer_liml_2016_02_22*/
     aw87319_rst_low: aw87319_rst_low{
         pins_cmd_dat {
             pins = <PINMUX_GPIO55__FUNC_GPIO55>;

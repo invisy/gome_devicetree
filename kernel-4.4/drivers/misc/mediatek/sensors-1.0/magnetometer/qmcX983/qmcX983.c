@@ -1796,9 +1796,7 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	memset(data, 0, sizeof(struct qmcX983_i2c_data));
 
 	data->hw = qst_hw;
-	client->addr = 0x2c;
-//		atomic_set(&data->layout, 4);
-//		data->hw->direction = 4;
+
 	if (hwmsen_get_convert(data->hw->direction, &data->cvt)) {
         	MSE_ERR("QMCX983 invalid direction: %d\n", data->hw->direction);
         	goto exit_kfree;

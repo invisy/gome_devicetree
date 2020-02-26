@@ -5548,8 +5548,6 @@ static int stk3x1x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 
 	INIT_DELAYED_WORK(&obj->eint_work, stk3x1x_eint_work);
 	printk("client->addr======%x\n",client->addr);
-	client->addr = 0x48;
-	printk("client->addr======%x\n",client->addr);
 	obj->client = client;
 	i2c_set_clientdata(client, obj);	
 	atomic_set(&obj->als_debounce, 200);

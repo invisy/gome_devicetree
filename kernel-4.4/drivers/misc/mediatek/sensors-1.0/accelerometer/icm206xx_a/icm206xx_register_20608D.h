@@ -51,7 +51,7 @@
 /*----------------------------------------------------------------------------*/
 
 #define ICM206XX_BIT_DEVICE_RESET		0x80
-#define ICM206XX_BIT_SLEEP			0x40	/* enable low power sleep mode */
+#define ICM206XX_BIT_SLEEP			    0x40	/* enable low power sleep mode */
 
 #define ICM206XX_BIT_ACCEL_FSR			0x18	/* b' 00011000 */
 #define ICM206XX_BIT_GYRO_FSR			0x18
@@ -75,7 +75,7 @@
 
 /*----------------------------------------------------------------------------*/
 
-#define ICM20608D_WHO_AM_I			0xAE
+#define ICM20608D_WHO_AM_I			0xAE //	 0xAEfor ICM20608D, 0x11 for ICM20600
 
 /*----------------------------------------------------------------------------*/
 

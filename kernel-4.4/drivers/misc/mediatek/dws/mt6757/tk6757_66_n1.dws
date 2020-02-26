@@ -194,9 +194,8 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio5>
-
             <gpio6>
- 		<eint_mode>true</eint_mode>
+				<eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000000</mode_arr>
                 <inpull_en>true</inpull_en>
@@ -2126,7 +2125,17 @@
                 <channel>I2C_CHANNEL_0</channel>
                 <address>0x01</address>
             </device0>
-            <device4>
+			<device2>
+                <varName>MSENSOR</varName>
+                <channel>I2C_CHANNEL_1</channel>
+                <address>0x2D</address>
+            </device2>
+			<device3>
+                <varName>GSENSOR</varName>
+                <channel>I2C_CHANNEL_1</channel>
+                <address>0x69</address>
+            </device3>
+			<device4>
                 <varName>BAROMETER</varName>
                 <channel>I2C_CHANNEL_1</channel>
                 <address>0x77</address>
@@ -2134,8 +2143,18 @@
             <device5>
                 <varName>ALSPS</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x1e</address>
+                <address>0x48</address>
             </device5>
+			<device6>
+                <varName>SPEAKER_AMP</varName>
+                <channel>I2C_CHANNEL_1</channel>
+                <address>0x58</address>
+            </device6>
+			<device7>
+                <varName>GYRO</varName>
+                <channel>I2C_CHANNEL_1</channel>
+                <address>0x6c</address>
+            </device7>
             <device8>
                 <varName>EXT_BUCK_VMD1</varName>
                 <channel>I2C_CHANNEL_1</channel>
@@ -2196,11 +2215,6 @@
                 <channel>I2C_CHANNEL_8</channel>
                 <address>0x43</address>
             </device23>
-	    <device24>
-                <varName>SPEAKER_AMP</varName>
-                <channel>I2C_CHANNEL_1</channel>
-                <address>0x58</address>
-            </device24>
         </module>
         <module name="md1_eint">
             <count>4</count>
