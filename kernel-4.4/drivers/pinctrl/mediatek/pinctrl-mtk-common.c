@@ -672,10 +672,6 @@ static int mtk_pconf_parse_conf(struct pinctrl_dev *pctldev,
 {
 	int ret = 0;
 	struct mtk_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
-	static int counter = 0;
-	if(pin == 82)
-		counter++;
-	dev_err(pctl->dev, "[Pin CONFIGURE!!] times : %d\n", counter);
 
 	switch (param) {
 	case PIN_CONFIG_BIAS_DISABLE:
