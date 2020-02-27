@@ -1660,15 +1660,6 @@
 		clocks = <&infrasys INFRACFG_AO_I2C4_CG>, <&infrasys INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
-
-		bcm2079x@76 {
-			compatible = "nfc,bcm2079x-i2c";
-			irq-gpio = <&pio 0x52 0x00>;
-			en-gpio = <&pio 0x53 0x1>;
-			wake-gpio = <&pio 0x5a 0x00>;
-			reg = <0x76>;
-			status = "okay";
-		};
 	};
 
 	spi1: spi@11010000 {

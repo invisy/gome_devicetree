@@ -387,15 +387,15 @@ static int bcm2079x_parse_dt(struct device *dev,
 	struct bcm2079x_platform_data *pdata)
 {
 	struct device_node *np = dev->of_node;
-	pdata->irq_gpio = of_get_named_gpio_flags(np, "bcm2079x-i2c,irq-gpio",
+	pdata->irq_gpio = of_get_named_gpio_flags(np, "irq-gpio",
 		0, &pdata->irq_gpio_flags);
-	pdata->en_gpio = of_get_named_gpio_flags(np, "bcm2079x-i2c,en-gpio",
+	pdata->en_gpio = of_get_named_gpio_flags(np, "en-gpio",
 		0, &pdata->en_gpio_flags);
-	pdata->wake_gpio = of_get_named_gpio_flags(np, "bcm2079x-i2c,wake-gpio",
+	pdata->wake_gpio = of_get_named_gpio_flags(np, "wake-gpio",
 		0, &pdata->wake_gpio_flags);
 
 	if (pdata->wake_gpio < 0)
-		of_property_read_u32(np, "bcm2079x-i2c,wake-expander-gpio",
+		of_property_read_u32(np, "wake-expander-gpio",
 			&pdata->wake_gpio);
 	return 0;
 }
@@ -406,6 +406,7 @@ static int bcm2079x_parse_dt(struct device *dev,
 	return -ENODEV;
 }
 #endif
+
 static int bcm2079x_probe(struct i2c_client *client,
 			   const struct i2c_device_id *id)
 {
@@ -424,6 +425,7 @@ static int bcm2079x_probe(struct i2c_client *client,
 			return -ENODEV;
 		}
 #endif
+
 	if (client->dev.of_node) {
 		platform_data = devm_kzalloc(&client->dev,
 			sizeof(struct bcm2079x_platform_data), GFP_KERNEL);
@@ -444,6 +446,7 @@ static int bcm2079x_probe(struct i2c_client *client,
 		dev_err(&client->dev, "nfc probe fail\n");
 		return -ENODEV;
 	}
+	
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		dev_err(&client->dev, "need I2C_FUNC_I2C\n");
@@ -576,7 +579,7 @@ static const struct i2c_device_id bcm2079x_id[] = {
 };
 #ifdef CONFIG_OF
 static struct of_device_id nfc_match_table[] = {
-	{ .compatible = "nfc,bcm2079x-i2c",},
+	{ .compatible = "mediatek,bcm2079x-i2c",},
 	{},
 };
 #else

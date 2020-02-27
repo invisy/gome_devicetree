@@ -365,90 +365,6 @@
 	status = "okay";
 };
 
-&nfc {
-	compatible = "mediatek,nfc-gpio-v2";
-	gpio-ven = <&pio 15 0>;
-	gpio-rst = <&pio 25 0>;
-	gpio-eint = <&pio 14 0>;
-	gpio-irq = <&pio 13 0>;
-	gpio-osc = <&pio 99 0>;
-	pinctrl-names = "default", "ven_high", "ven_low", "rst_high", "rst_low",
-	"eint_high", "eint_low", "irq_init";
-	pinctrl-0 = <&nfc_default>;
-	pinctrl-1 = <&nfc_ven_high>;
-	pinctrl-2 = <&nfc_ven_low>;
-	pinctrl-3 = <&nfc_rst_high>;
-	pinctrl-4 = <&nfc_rst_low>;
-	pinctrl-5 = <&nfc_eint_high>;
-	pinctrl-6 = <&nfc_eint_low>;
-	pinctrl-7 = <&nfc_irq_init>;
-	status = "okay";
-};
-
-/* NFC GPIO standardization */
-&pio {
-	nfc_default: nfc_default {
-
-	};
-
-	nfc_ven_high: state_ven_high {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	nfc_ven_low: state_ven_low {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO83__FUNC_GPIO83>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	nfc_rst_high: state_rst_high {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO90__FUNC_GPIO90>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	nfc_rst_low: state_rst_low {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO90__FUNC_GPIO90>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	nfc_eint_high: state_eint_high {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO82__FUNC_GPIO82>;
-			slew-rate = <1>;
-			output-high;
-		};
-	};
-
-	nfc_eint_low: state_eint_low {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO82__FUNC_GPIO82>;
-			slew-rate = <1>;
-			output-low;
-		};
-	};
-
-	nfc_irq_init: state_irq_init {
-		pins_cmd_dat {
-			pins = <PINMUX_GPIO82__FUNC_GPIO82>;
-			slew-rate = <0>;
-			bias-pull-down = <0>;
-		};
-	};
-};
-/* NFC end */
-
 /* UART GPIO */
 /*
 *&apuart0 {
@@ -852,6 +768,20 @@
 		power_vol = <0>;
 		firlen = <0>;
 		is_batch_supported = <0>;
+	};
+};
+
+&i2c3 {
+	bcm2079x@76 {
+		reg = <0x76>;
+		compatible = "mediatek,bcm2079x-i2c";
+		interrupt-parent = <0x10>;
+		interrupts = <0x52 0x8>;
+		debounce = <0x52 0x0>;
+		en-gpio = <&pio 15 0>;
+		wake-gpio = <&pio 25 0>;
+		irq-gpio = <&pio 13 0>;
+		status = "okay";
 	};
 };
 
