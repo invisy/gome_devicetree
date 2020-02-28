@@ -543,6 +543,8 @@ struct pinctrl_state *cam_mipi_switch_en_l;
 struct pinctrl_state *cam_mipi_switch_sel_h;	/* for mipi switch select */
 struct pinctrl_state *cam_mipi_switch_sel_l;
 int has_mipi_switch;
+struct pinctrl_state *cam0_af_1;	/* for cam0_af */
+struct pinctrl_state *cam0_af_0;	
 
 int mtkcam_gpio_init(struct platform_device *pdev)
 {
@@ -733,6 +735,18 @@ int mtkcam_gpio_init(struct platform_device *pdev)
 		has_mipi_switch = 0;
 		ret = PTR_ERR(cam_mipi_switch_sel_l);
 		PK_DBG("%s : pinctrl err, cam_mipi_switch_sel_l\n", __func__);
+	}
+	
+	cam0_af_1 = pinctrl_lookup_state(camctrl, "cam0_af_1");
+	if (IS_ERR(cam0_af_1)) {
+		ret = PTR_ERR(cam0_af_1);
+		PK_DBG("%s : pinctrl err, cam0_af_1\n", __func__);
+	}
+
+	cam0_af_0 = pinctrl_lookup_state(camctrl, "cam0_af_0");
+	if (IS_ERR(cam0_af_0)) {
+		ret = PTR_ERR(cam0_af_0);
+		PK_DBG("%s : pinctrl err, cam0_af_0\n", __func__);
 	}
 	return ret;
 }
@@ -945,6 +959,7 @@ BOOL hwpoweron(PowerInformation pwInfo, char *mode_name)
 	} else if (pwInfo.PowerType == AFVDD) {
 		/* PK_INFO("[CAMERA SENSOR] Skip AFVDD setting\n"); */
 		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
+			pinctrl_select_state(camctrl, cam0_af_1);
 			if (_hwPowerOn(pwInfo.PowerType, pwInfo.Voltage) != TRUE) {
 				PK_ERR("[CAMERA SENSOR] Fail to enable af power\n");
 				return FALSE;
@@ -1090,7 +1105,8 @@ BOOL hwpowerdown(PowerInformation pwInfo, char *mode_name)
 			}
 		}
 	} else if (pwInfo.PowerType == AFVDD) {
-		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {
+		if (PowerCustList.PowerCustInfo[CUST_AFVDD].Gpio_Pin == GPIO_UNSUPPORTED) {		
+			pinctrl_select_state(camctrl, cam0_af_0);
 			if (_hwPowerDown(pwInfo.PowerType) != TRUE) {
 				PK_ERR("[CAMERA SENSOR] Fail to disable af power\n");
 				return FALSE;
