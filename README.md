@@ -9,11 +9,12 @@ Works:
   - Light & Proximity sensor
   - accelerometer & gyroscope
   - magnetometer
-  - Back camera (bug: inverted colors) and flashlight
+  - Back camera and flashlight
   - speakers
   - microphone
   
 Doesn`t work:
+  - lens
   - NFC
   - fingerprint sensor
   - front camera
