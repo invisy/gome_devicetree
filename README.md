@@ -7,6 +7,8 @@ Works:
   - GPS
   - SIM1 & SIM2, mobile data
   - Light & Proximity sensor
+  - accelerometer & gyroscope
+  - magnetometer
   - Back camera (bug: inverted colors) and flashlight
   - speakers
   - microphone
@@ -14,8 +16,5 @@ Works:
 Doesn`t work:
   - NFC
   - fingerprint sensor
-  - accelerometer & gsensor
-  - gyroscope
-  - magnetometer
   - front camera
   - OTG
