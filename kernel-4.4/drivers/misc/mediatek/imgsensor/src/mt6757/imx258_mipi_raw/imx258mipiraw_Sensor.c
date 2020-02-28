@@ -221,7 +221,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_MANUAL,	/* 0,MIPI_SETTLEDELAY_AUTO;
 								 * 1,MIPI_SETTLEDELAY_MANNUAL
 								 */
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,	/* sensor output first pixel color */
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,	/* sensor output first pixel color */
 	.mclk = 24,		/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,	/* mipi lane num */
 	.i2c_addr_table = {0x34, 0x20, 0xff},	/* record sensor support all write id addr,
