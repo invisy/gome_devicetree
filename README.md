@@ -14,8 +14,8 @@ Works:
   - microphone
   
 Doesn`t work:
-  - lens
-  - NFC
+  - lens (fix soon)
+  - NFC (fix soon)
   - fingerprint sensor
   - front camera
   - OTG
