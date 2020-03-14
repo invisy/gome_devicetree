@@ -18,4 +18,5 @@ Doesn`t work:
   - NFC (fix soon)
   - fingerprint sensor
   - front camera
-  - OTG
+  - OTG (fix soon)
+  - USB Audio
