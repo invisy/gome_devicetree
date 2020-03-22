@@ -42,24 +42,8 @@
 
 #include <linux/nfc/bcm2079x.h>
 
-#undef DEBUG_BCM2079X_I2C_IRQ
-
-#define TRUE		1
-#define FALSE		0
-#define STATE_HIGH	1
-#define STATE_LOW	0
-
-/* end of compile options */
-
 /* do not change below */
 #define MAX_BUFFER_SIZE		780
-
-	/* Read data */
-#define PACKET_HEADER_SIZE_NCI	(4)
-#define PACKET_HEADER_SIZE_HCI	(3)
-#define PACKET_TYPE_NCI		(16)
-#define PACKET_TYPE_HCIEV	(4)
-#define MAX_PACKET_SIZE		(PACKET_HEADER_SIZE_NCI + 255)
 
 #ifdef CONFIG_MACH_VICTORLTE_CTC
 extern unsigned int system_rev;
@@ -82,107 +66,17 @@ struct bcm2079x_dev {
 	unsigned int count_irq;
 };
 
-static void bcm2079x_init_stat(struct bcm2079x_dev *bcm2079x_dev)
-{
-	bcm2079x_dev->error_write = 0;
-	bcm2079x_dev->error_read = 0;
-	bcm2079x_dev->count_read = 0;
-	bcm2079x_dev->count_irq = 0;
-}
-#ifndef DEBUG_BCM2079X_I2C_IRQ
-/*static void bcm2079x_disable_irq(struct bcm2079x_dev *bcm2079x_dev)
-{
-	unsigned long flags;
-	spin_lock_irqsave(&bcm2079x_dev->irq_enabled_lock, flags);
-	if (bcm2079x_dev->irq_enabled) {
-		disable_irq_wake(bcm2079x_dev->client->irq);
-		disable_irq_nosync(bcm2079x_dev->client->irq);
-		bcm2079x_dev->irq_enabled = false;
-	}
-	spin_unlock_irqrestore(&bcm2079x_dev->irq_enabled_lock, flags);
-}*/
-#endif
 static void bcm2079x_enable_irq(struct bcm2079x_dev *bcm2079x_dev)
 {
 	unsigned long flags;
 	spin_lock_irqsave(&bcm2079x_dev->irq_enabled_lock, flags);
 	if (!bcm2079x_dev->irq_enabled) {
 		bcm2079x_dev->irq_enabled = true;
+		bcm2079x_dev->count_irq = 0;
 		enable_irq(bcm2079x_dev->client->irq);
 		enable_irq_wake(bcm2079x_dev->client->irq);
 	}
 	spin_unlock_irqrestore(&bcm2079x_dev->irq_enabled_lock, flags);
-}
-
-/*
- The alias address 0x79, when sent as a 7-bit address from the host processor
- will match the first byte (highest 2 bits) of the default client address
- (0x1FA) that is programmed in bcm20791.
- When used together with the first byte (0xFA) of the byte sequence below,
- it can be used to address the bcm20791 in a system that does not support
- 10-bit address and change the default address to 0x38.
- the new address can be changed by changing the CLIENT_ADDRESS below if 0x38
- conflicts with other device on the same i2c bus.
- */
-#define ALIAS_ADDRESS	  0x79
-/*
-static void set_client_addr(struct bcm2079x_dev *bcm2079x_dev, int addr)
-{
-	struct i2c_client *client = bcm2079x_dev->client;
-	client->addr = addr;
-	if (addr > 0x7F)
-		client->flags |= I2C_CLIENT_TEN;
-
-	dev_info(&client->dev,
-		"Set client device changed to (0x%04X) flag = %04x\n",
-		client->addr, client->flags);
-}
-*/
-static void change_client_addr(struct bcm2079x_dev *bcm2079x_dev, int addr)
-{
-	struct i2c_client *client;
-	int ret;
-	int i;
-	int offset = 1;
-	char addr_data[] = {
-		0xFA, 0xF2, 0x00, 0x00,
-		0x00, 0x38, 0x00, 0x00, 0x00, 0x2A
-	};
-
-	client = bcm2079x_dev->client;
-	if ((client->flags & I2C_CLIENT_TEN) == I2C_CLIENT_TEN) {
-		client->addr = ALIAS_ADDRESS;
-		client->flags &= ~I2C_CLIENT_TEN;
-		offset = 0;
-	}
-
-	addr_data[5] = addr & 0xFF;
-	ret = 0;
-	for (i = 1; i < sizeof(addr_data) - 1; ++i)
-		ret += addr_data[i];
-	addr_data[sizeof(addr_data) - 1] = (ret & 0xFF);
-	dev_info(&client->dev,
-		 "Change client device from (0x%04X) flag = "\
-		 "%04x, addr_data[%zu] = %02x\n",
-		 client->addr, client->flags, sizeof(addr_data) - 1,
-		 addr_data[sizeof(addr_data) - 1]);
-	ret = i2c_master_send(client, addr_data+offset,
-		sizeof(addr_data)-offset);
-	if (ret != sizeof(addr_data)-offset) {
-		client->addr = ALIAS_ADDRESS;
-		client->flags &= ~I2C_CLIENT_TEN;
-		dev_info(&client->dev,
-			 "Change client device from (0x%04X) flag = "\
-		 "%04x, addr_data[%zu] = %02x\n",
-		 client->addr, client->flags, sizeof(addr_data) - 1,
-		 addr_data[sizeof(addr_data) - 1]);
-	ret = i2c_master_send(client, addr_data, sizeof(addr_data));
-	}
-	client->addr = addr_data[5];
-
-		dev_info(&client->dev,
-		 "Change client device changed to (0x%04X) flag = %04x, ret = %d\n",
-			 client->addr, client->flags, ret);
 }
 
 static irqreturn_t bcm2079x_dev_irq_handler(int irq, void *dev_id)
@@ -190,15 +84,11 @@ static irqreturn_t bcm2079x_dev_irq_handler(int irq, void *dev_id)
 	struct bcm2079x_dev *bcm2079x_dev = dev_id;
 	unsigned long flags;
 
-#ifdef DEBUG_BCM2079X_I2C_IRQ
-	pr_info("%s, irq is handled!!!!!!!!\n", __func__);
-#endif
 	spin_lock_irqsave(&bcm2079x_dev->irq_enabled_lock, flags);
 	bcm2079x_dev->count_irq++;
 	spin_unlock_irqrestore(&bcm2079x_dev->irq_enabled_lock, flags);
 	wake_up(&bcm2079x_dev->read_wq);
 
-	wake_lock_timeout(&bcm2079x_dev->nfc_wake_lock, 2 * HZ);
 	return IRQ_HANDLED;
 }
 
@@ -208,13 +98,17 @@ static unsigned int bcm2079x_dev_poll(struct file *filp, poll_table *wait)
 	unsigned int mask = 0;
 	unsigned long flags;
 
+
 	poll_wait(filp, &bcm2079x_dev->read_wq, wait);
 
 	spin_lock_irqsave(&bcm2079x_dev->irq_enabled_lock, flags);
-	if (bcm2079x_dev->count_irq > 0)
-		mask |= POLLIN | POLLRDNORM;
-	spin_unlock_irqrestore(&bcm2079x_dev->irq_enabled_lock, flags);
 
+	if (bcm2079x_dev->count_irq > 0)
+	{
+		bcm2079x_dev->count_irq--;
+		mask |= POLLIN | POLLRDNORM;
+	}
+	spin_unlock_irqrestore(&bcm2079x_dev->irq_enabled_lock, flags);
 	return mask;
 }
 
@@ -223,66 +117,30 @@ static ssize_t bcm2079x_dev_read(struct file *filp, char __user *buf,
 {
 	struct bcm2079x_dev *bcm2079x_dev = filp->private_data;
 	unsigned char tmp[MAX_BUFFER_SIZE];
-	int total, len, ret;
+	int total;
+	dev_info(&bcm2079x_dev->client->dev,"bcm2079x_dev_read\n");
 
 	total = 0;
-	len = 0;
 
-	if (bcm2079x_dev->count_irq > 0)
-		bcm2079x_dev->count_irq--;
-
-	bcm2079x_dev->count_read++;
 	if (count > MAX_BUFFER_SIZE)
 		count = MAX_BUFFER_SIZE;
 
 	mutex_lock(&bcm2079x_dev->read_mutex);
-
-	/** Read the first 4 bytes to include the length of the NCI or HCI.
+	/** Raw mode Read the full length and return.
 	**/
-	ret = i2c_master_recv(bcm2079x_dev->client, tmp, 4);
-	if (ret == 4) {
-		total = ret;
-		/** First byte is the packet type
-		**/
-		switch (tmp[0]) {
-		case PACKET_TYPE_NCI:
-			len = tmp[PACKET_HEADER_SIZE_NCI-1];
-			break;
-
-		case PACKET_TYPE_HCIEV:
-			len = tmp[PACKET_HEADER_SIZE_HCI-1];
-			if (len == 0)
-				/* Since payload is 0, decrement total size
-				(from 4 to 3) */
-				total--;
-			else
-				/*First byte of payload is in tmp[3] already */
-				len--;
-			break;
-		default:
-			/*Unknown packet byte */
-			len = 0;
-			break;
-		} /* switch*/
-
-		/** make sure full packet fits in the buffer **/
-		if (len > 0 && (len + total) <= count) {
-			/** read the remainder of the packet. **/
-			ret = i2c_master_recv(bcm2079x_dev->client, tmp+total, len);
-			if (ret == len)
-				total += len;
-		} /* if */
-	} /* if */
-
+	total = i2c_master_recv(bcm2079x_dev->client, tmp, count);
 	mutex_unlock(&bcm2079x_dev->read_mutex);
 
-	if (total > count || copy_to_user(buf, tmp, total)) {
+	if (total != count) {
+		dev_err(&bcm2079x_dev->client->dev,
+			"failed to read data from i2c bus driver, total = 0x%x count = %d\n",
+			total, (int)count);
+		total = -EIO;
+	} else if (copy_to_user(buf, tmp, total)) {
 		dev_err(&bcm2079x_dev->client->dev,
 			"failed to copy to user space, total = %d\n", total);
 		total = -EFAULT;
-		bcm2079x_dev->error_read++;
 	}
-
 	return total;
 }
 
@@ -292,6 +150,7 @@ static ssize_t bcm2079x_dev_write(struct file *filp, const char __user *buf,
 	struct bcm2079x_dev *bcm2079x_dev = filp->private_data;
 	char tmp[MAX_BUFFER_SIZE];
 	int ret;
+	dev_info(&bcm2079x_dev->client->dev,"bcm2079x_dev_write\n");
 
 	if (count > MAX_BUFFER_SIZE) {
 		dev_err(&bcm2079x_dev->client->dev, "out of memory\n");
@@ -312,7 +171,6 @@ static ssize_t bcm2079x_dev_write(struct file *filp, const char __user *buf,
 		dev_err(&bcm2079x_dev->client->dev,
 			"failed to write %d\n", ret);
 		ret = -EIO;
-		bcm2079x_dev->error_write++;
 	}
 	mutex_unlock(&bcm2079x_dev->read_mutex);
 
@@ -327,7 +185,6 @@ static int bcm2079x_dev_open(struct inode *inode, struct file *filp)
 							   struct bcm2079x_dev,
 							   bcm2079x_device);
 	filp->private_data = bcm2079x_dev;
-	bcm2079x_init_stat(bcm2079x_dev);
 	bcm2079x_enable_irq(bcm2079x_dev);
 	dev_info(&bcm2079x_dev->client->dev,
 		"dev node major=%d, minor=%d\n", imajor(inode), iminor(inode));
@@ -349,13 +206,13 @@ static long bcm2079x_dev_unlocked_ioctl(struct file *filp,
 		dev_info(&bcm2079x_dev->client->dev,
 			 "%s, BCMNFC_CHANGE_ADDR (%x, %lx):\n", __func__, cmd,
 			 arg);
-		change_client_addr(bcm2079x_dev, arg);
 		break;
 	case BCMNFC_POWER_CTL:
 		dev_info(&bcm2079x_dev->client->dev,
 			 "%s, BCMNFC_POWER_CTL (%x, %lx):\n", __func__, cmd,
 			 arg);
 		gpio_set_value(bcm2079x_dev->en_gpio, arg);
+		bcm2079x_dev->count_irq = 0;
 		break;
 	case BCMNFC_WAKE_CTL:
 		dev_info(&bcm2079x_dev->client->dev,
@@ -363,6 +220,8 @@ static long bcm2079x_dev_unlocked_ioctl(struct file *filp,
 			 arg);
 		gpio_set_value(bcm2079x_dev->wake_gpio, arg);
 		break;
+	case 64008:
+		return 1;
 	default:
 		dev_err(&bcm2079x_dev->client->dev,
 			"%s, unknown cmd (%x, %lx)\n", __func__, cmd, arg);
@@ -414,9 +273,7 @@ static int bcm2079x_probe(struct i2c_client *client,
 	int err;
 	struct bcm2079x_platform_data *platform_data;
 	struct bcm2079x_dev *bcm2079x_dev;
-#ifdef DEBUG_BCM2079X_I2C_IRQ
-	char tmp[5] = {0x10, 0x20, 0x00, 0x01, 0x00};
-#endif
+
 #ifdef CONFIG_MACH_VICTORLTE_CTC
 		pr_info("%s : start  system_rev : %d\n", __func__,system_rev);
 		if (system_rev > 2)
@@ -467,13 +324,8 @@ static int bcm2079x_probe(struct i2c_client *client,
 		goto err_firm;
 	gpio_direction_output(platform_data->wake_gpio, 0);
 
-#ifdef DEBUG_BCM2079X_I2C_IRQ
-	msleep(100);
-	gpio_set_value_cansleep(platform_data->en_gpio, 1);
-	msleep(100);
-#else
+
 	gpio_set_value_cansleep(platform_data->en_gpio, 0);
-#endif
 	gpio_set_value_cansleep(platform_data->wake_gpio, 1);
 
 	bcm2079x_dev = kzalloc(sizeof(*bcm2079x_dev), GFP_KERNEL);
@@ -515,27 +367,16 @@ static int bcm2079x_probe(struct i2c_client *client,
 
 	dev_info(&client->dev, "requesting IRQ %d with IRQF_NO_SUSPEND\n",
 		client->irq);
-	ret = request_irq(client->irq, bcm2079x_dev_irq_handler,
-		IRQF_TRIGGER_RISING|IRQF_NO_SUSPEND, client->name,
-		bcm2079x_dev);
+	ret = request_irq(client->irq, bcm2079x_dev_irq_handler, IRQF_TRIGGER_RISING, client->name, bcm2079x_dev);
 	if (ret) {
 		dev_err(&client->dev, "request_irq failed\n");
 		goto err_request_irq_failed;
 	}
 	i2c_set_clientdata(client, bcm2079x_dev);
-#ifndef DEBUG_BCM2079X_I2C_IRQ
+
 	bcm2079x_dev->irq_enabled = false;
 	disable_irq_nosync(bcm2079x_dev->client->irq);
-#else
-	/* NCI reset test */
-	ret = i2c_master_send(bcm2079x_dev->client, tmp, sizeof(tmp));
-	if (ret != 5)
-		pr_err("%s, i2c write error, NCI rest cmd err = %d\n",
-			__func__, ret);
-	else
-		pr_info("%s, i2c write success!!! ret = %d\n",
-			__func__, ret);
-#endif
+
 	dev_info(&client->dev,
 		 "%s, probing bcm2079x driver exited successfully\n",
 		 __func__);
