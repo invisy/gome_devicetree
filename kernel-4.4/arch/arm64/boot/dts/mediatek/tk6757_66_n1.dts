@@ -798,9 +798,9 @@
 		interrupt-parent = <0x10>;
 		interrupts = <0x52 0x8>;
 		debounce = <0x52 0x0>;
-		en-gpio = <&pio 15 0>;
-		wake-gpio = <&pio 25 0>;
-		irq-gpio = <&pio 13 0>;
+		en-gpio = <&pio 83 0>;
+		wake-gpio = <&pio 90 0>;
+		irq-gpio = <&pio 82 0>;
 		status = "okay";
 	};
 };
