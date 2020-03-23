@@ -14,9 +14,7 @@ Works:
   - microphone
   
 Doesn`t work:
-  - lens (fix soon)
-  - NFC (fix soon)
+  - OTG (fix soon)
   - fingerprint sensor
   - front camera
-  - OTG (fix soon)
   - USB Audio
