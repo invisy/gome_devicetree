@@ -12,6 +12,7 @@ Works:
   - Back camera and flashlight
   - speakers
   - microphone
+  - NFC
   
 Doesn`t work:
   - OTG (fix soon)
