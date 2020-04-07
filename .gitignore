@@ -41,6 +41,13 @@ vendor/mediatek/proprietary/bootable/bootloader/preloader/*
 vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/*
 !vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/u7/
 !vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/u7/*
+!vendor/mediatek/proprietary/bootable/bootloader/preloader/tools/
+vendor/mediatek/proprietary/bootable/bootloader/preloader/tools/*
+!vendor/mediatek/proprietary/bootable/bootloader/preloader/tools/emigen/
+vendor/mediatek/proprietary/bootable/bootloader/preloader/tools/emigen/*
+!vendor/mediatek/proprietary/bootable/bootloader/preloader/tools/emigen/MT6757/
+vendor/mediatek/proprietary/bootable/bootloader/preloader/tools/emigen/MT6757/*
+!vendor/mediatek/proprietary/bootable/bootloader/preloader/tools/emigen/MT6757/MemoryDeviceList_MT6757.xls
 !vendor/mediatek/proprietary/custom/
 vendor/mediatek/proprietary/custom/*
 !vendor/mediatek/proprietary/custom/u7/
