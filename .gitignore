@@ -28,6 +28,13 @@ vendor/mediatek/proprietary/bootable/bootloader/lk/project/*
 vendor/mediatek/proprietary/bootable/bootloader/lk/target/*
 !vendor/mediatek/proprietary/bootable/bootloader/lk/target/u7/
 !vendor/mediatek/proprietary/bootable/bootloader/lk/target/u7/*
+!vendor/mediatek/proprietary/bootable/bootloader/lk/dev
+vendor/mediatek/proprietary/bootable/bootloader/lk/dev/*
+!vendor/mediatek/proprietary/bootable/bootloader/lk/dev/lcm
+vendor/mediatek/proprietary/bootable/bootloader/lk/dev/lcm/*
+!vendor/mediatek/proprietary/bootable/bootloader/lk/dev/lcm/nt36672_fhd_dsi_vdo_rt5081/
+!vendor/mediatek/proprietary/bootable/bootloader/lk/dev/lcm/nt36672_fhd_dsi_vdo_rt5081/*
+!vendor/mediatek/proprietary/bootable/bootloader/lk/dev/lcm/mt65xx_lcm_list.c
 !vendor/mediatek/proprietary/bootable/bootloader/preloader/
 vendor/mediatek/proprietary/bootable/bootloader/preloader/*
 !vendor/mediatek/proprietary/bootable/bootloader/preloader/custom/
@@ -47,7 +54,7 @@ vendor/mediatek/proprietary/trustzone/custom/build/*
 !vendor/mediatek/proprietary/trustzone/custom/build/project/
 vendor/mediatek/proprietary/trustzone/custom/build/project/*
 !vendor/mediatek/proprietary/trustzone/custom/build/project/u7.mk
+
 =======
 kernel-4.4/out
 kernel-4.4/out/*
->>>>>>> FETCH_HEAD
