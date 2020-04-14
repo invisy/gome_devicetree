@@ -221,7 +221,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.mipi_settle_delay_mode = MIPI_SETTLEDELAY_MANUAL,	/* 0,MIPI_SETTLEDELAY_AUTO;
 								 * 1,MIPI_SETTLEDELAY_MANNUAL
 								 */
-	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_R,	/* sensor output first pixel color */
+	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,	/* sensor output first pixel color */
 	.mclk = 24,		/* mclk value, suggest 24 or 26 for 24Mhz or 26Mhz */
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,	/* mipi lane num */
 	.i2c_addr_table = {0x34, 0x20, 0xff},	/* record sensor support all write id addr,
@@ -231,7 +231,7 @@ static imgsensor_info_struct imgsensor_info = {
 
 
 static imgsensor_struct imgsensor = {
-	.mirror = IMAGE_NORMAL,	/* mirrorflip information */
+	.mirror = IMAGE_HV_MIRROR,	/* mirrorflip information */
 	.sensor_mode = IMGSENSOR_MODE_INIT,	/* IMGSENSOR_MODE enum value,record current sensor mode,such as:
 						 * INIT, Preview, Capture, Video,High Speed Video, Slim Video
 						 */
@@ -313,7 +313,7 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4SubBlkH = 16,
 	.i4PosL = {{26, 29}, {34, 29}, {42, 29}, {50, 29}, {30, 45}, {38, 45}, {46, 45}, {54, 45} },
 	.i4PosR = {{26, 33}, {34, 33}, {42, 33}, {50, 33}, {30, 49}, {38, 49}, {46, 49}, {54, 49} },
-	.iMirrorFlip = 0,	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
+	.iMirrorFlip = 3,	/* 0:IMAGE_NORMAL,1:IMAGE_H_MIRROR,2:IMAGE_V_MIRROR,3:IMAGE_HV_MIRROR */
 };
 
 /* Binning Type VC information*/
@@ -1293,7 +1293,7 @@ static void sensor_init(void)
 
 	imx258_ImageQuality_Setting();
 	/*Need Mirror/Flip */
-	set_mirror_flip(0);
+	set_mirror_flip(IMAGE_HV_MIRROR);
 
 	write_imx258_SPC_Data();
 	write_cmos_sensor(0x7BC8, 0x01);
@@ -2876,7 +2876,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	imgsensor.autoflicker_en = KAL_FALSE;
 	spin_unlock(&imgsensor_drv_lock);
 	preview_setting();
-	set_mirror_flip(0);
+	set_mirror_flip(IMAGE_HV_MIRROR);
 	return ERROR_NONE;
 }				/*      preview   */
 
@@ -2931,7 +2931,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	}
 	spin_unlock(&imgsensor_drv_lock);
 	capture_setting(imgsensor.current_fps, imgsensor.pdaf_mode);
-	set_mirror_flip(0);
+	set_mirror_flip(IMAGE_HV_MIRROR);
 	mdelay(100);
 	return ERROR_NONE;
 }				/* capture() */
