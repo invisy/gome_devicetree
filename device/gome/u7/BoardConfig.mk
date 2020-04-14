@@ -26,3 +26,5 @@ BOARD_KERNEL_CMDLINE = bootopt=64S3,32N2,64N2
 endif
 
 -include device/mediatek/build/core/soong_config.mk
+
+BOARD_VNDK_VERSION := current
