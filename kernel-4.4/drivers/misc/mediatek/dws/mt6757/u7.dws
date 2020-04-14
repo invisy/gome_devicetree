@@ -49,11 +49,11 @@
         <module name="eint">
             <count>153</count>
             <eint0>
-                <varName>ACCDET</varName>
-                <debounce_time>256</debounce_time>
+                <varName>GYRO</varName>
+                <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
+                <debounce_en>Disable</debounce_en>
             </eint0>
             <eint1>
                 <varName>TOUCH</varName>
@@ -62,27 +62,27 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint1>
-            <eint3>
-                <varName>MSDC1_INS</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Edge</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint3>
-            <eint4>
-                <varName>GYRO</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>High</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint4>
-            <eint6>
+			<eint2>
                 <varName>ALSPS_MTK</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
-            </eint6>
+            </eint2>
+            <eint3>
+                <varName>MSDC1_INS</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint3>
+            <eint4>
+                <varName>ACCDET</varName>
+                <debounce_time>256</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Enable</debounce_en>
+            </eint4>
             <eint7>
                 <varName>MRDUMP_EXT_RST</varName>
                 <debounce_time>512</debounce_time>
@@ -128,19 +128,6 @@
         </module>
         <module name="gpio">
             <count>194</count>
-            <gpio0>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <in>true</in>
-                <out>false</out>
-                <out_high>false</out_high>
-                <smt>true</smt>
-                <ies>true</ies>
-            </gpio0>
             <gpio1>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
@@ -156,17 +143,17 @@
                 <ies>true</ies>
             </gpio1>
             <gpio2>
-                <eint_mode>true</eint_mode>
+		<eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000000</mode_arr>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <in>true</in>
                 <out>false</out>
                 <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_EINT_PIN</varName0>
-                <smt>true</smt>
+                <varName0>GPIO_ALS_EINT_PIN</varName0>
+                <smt>false</smt>
                 <ies>true</ies>
             </gpio2>
             <gpio3>
@@ -211,20 +198,6 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio5>
-            <gpio6>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <mode_arr>10000000</mode_arr>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <in>true</in>
-                <out>false</out>
-                <out_high>false</out_high>
-                <varName0>GPIO_ALS_EINT_PIN</varName0>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio6>
             <gpio7>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
@@ -2263,7 +2236,7 @@
             <eint0>
                 <varName>MD1_SIM1_HOT_PLUG_EINT</varName>
                 <debounce_time>100</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
@@ -2273,7 +2246,7 @@
             <eint1>
                 <varName>MD1_SIM2_HOT_PLUG_EINT</varName>
                 <debounce_time>100</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
                 <dedicated_en>Disable</dedicated_en>
@@ -2292,7 +2265,6 @@
             <pmic1>
                 <ldoVar>VCAMA2</ldoVar>
                 <defEn>SKIP</defEn>
-                <varName0>SUB_CAMERA_POWER_A</varName0>
             </pmic1>
             <pmic2>
                 <ldoVar>VSIM1</ldoVar>
