@@ -122,9 +122,10 @@
 #ifdef USING_CLASSD_AMP
 #undef USING_CLASSD_AMP
 #endif
-#define USING_CLASSD_AMP                // define using which flag
+//#define USING_CLASSD_AMP                // define using which flag
 //#define USING_CLASSAB_AMP
 
+#define EXT_SPK_SUPPORT
 /******************************************************************
 ** define chip delay for NXP
 ******************************************************************/
