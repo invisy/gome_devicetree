@@ -93,6 +93,13 @@
 #include "../../../../drivers/misc/mediatek/auxadc/mt6755/mt_auxadc_sw.h"
 #endif
 
+/* Speaker fix */
+#ifdef CONFIG_MTK_AWINIC_AW87319_AUDIO
+extern unsigned char AW87319_Audio_Speaker(void);
+extern unsigned char AW87319_Audio_OFF(void);
+#endif
+/* End Speaker fix */
+
 /* static function declaration */
 static bool get_analog_input_status(void);
 static void Apply_Speaker_Gain(void);
@@ -3250,6 +3257,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 			AudDrv_GPIO_EXTAMP2_Select(true, 3);
 #endif
 #endif				/*CONFIG_MTK_LEGACY */
+/* Speaker fix */
+#ifdef CONFIG_MTK_AWINIC_AW87319_AUDIO
+	AW87319_Audio_Speaker();
+#endif
+/* End Speaker fix */
 		msleep(SPK_WARM_UP_TIME);
 #endif
 		pr_debug("Ext_Speaker_Amp_Change ON-\n");
@@ -3267,6 +3279,11 @@ static void Ext_Speaker_Amp_Change(bool enable)
 #endif
 		udelay(500);
 #endif
+/* Speaker fix */
+	#ifdef CONFIG_MTK_AWINIC_AW87319_AUDIO
+		AW87319_Audio_OFF();
+	#endif
+/* End Speaker fix */
 		pr_debug("Ext_Speaker_Amp_Change OFF-\n");
 	}
 #endif

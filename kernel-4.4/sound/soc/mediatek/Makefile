@@ -44,6 +44,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/auxadc/
 
 # Common include path
 subdir-ccflags-y += -Werror -I$(src)/common_int
+obj-$(CONFIG_MTK_AWINIC_AW87319_AUDIO) += mt_soc_audio_87319/
 
 # PMIC include path
 subdir-ccflags-y += -Werror -I$(src)/codec/$(MTK_CODEC)

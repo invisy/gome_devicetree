@@ -820,6 +820,13 @@
 	};
 };
 
+&aw87319_pa {
+	pinctrl-names = "aw87319_rst_high", "aw87319_rst_low";
+	pinctrl-0 = <&aw87319_rst_high>;
+	pinctrl-1 = <&aw87319_rst_low>;
+	status = "okay";
+};
+
 &pio {
     aw87319_rst_high: aw87319_rst_high{
         pins_cmd_dat {

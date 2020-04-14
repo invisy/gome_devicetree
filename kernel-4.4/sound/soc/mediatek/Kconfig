@@ -248,3 +248,4 @@ config MT8183_QUERY_PCB_ID_METHOD
 	  STM1 is 0v which is DCC mode,SMT2 is about 0.9v which is ACC mode
 	  If you say Y, enable MT8183_QUERY_PCB_ID_METHOD
 
+source "sound/soc/mediatek/mt_soc_audio_87319/Kconfig"

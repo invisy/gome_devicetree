@@ -416,6 +416,10 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			     <GIC_SPI 70 IRQ_TYPE_LEVEL_HIGH>,
 			     <GIC_SPI 71 IRQ_TYPE_LEVEL_HIGH>;
 	};
+	
+	aw87319_pa:aw87319_pa@ {
+		compatible = "mediatek,aw87319_pa";
+	};
 
 	pmu {
 		compatible = "arm,armv8-pmuv3";
