@@ -5,7 +5,7 @@ Works:
   - Wi-Fi
   - Bluetooth
   - GPS
-  - SIM1 & SIM2
+  - SIM1 & SIM2, mobile data
   - speakers
   - microphone
   - Charger, OTG
@@ -16,7 +16,6 @@ Doesn`t work:
   - accelerometer & gyroscope [fix soon]
   - magnetometer [fix soon]
   - NFC [fix soon]
-  - mobile data
   - USB Audio
   - front camera
   - fingerprint sensor
