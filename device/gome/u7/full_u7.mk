@@ -31,12 +31,12 @@ else
 endif
 
 # Set those variables here to overwrite the inherited values.
-PRODUCT_MANUFACTURER := alps
+PRODUCT_MANUFACTURER := Gome
 PRODUCT_NAME := full_u7
 PRODUCT_DEVICE := $(strip $(MTK_BASE_PROJECT))
-PRODUCT_MODEL := u7
+PRODUCT_MODEL := Gome U7
 PRODUCT_POLICY := android.policy_phone
-PRODUCT_BRAND := alps
+PRODUCT_BRAND := Gome
 
 ifeq ($(TARGET_BUILD_VARIANT), eng)
 KERNEL_DEFCONFIG ?= u7_debug_defconfig
