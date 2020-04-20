@@ -128,6 +128,19 @@
         </module>
         <module name="gpio">
             <count>194</count>
+			<gpio0>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <mode_arr>10000000</mode_arr>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <in>true</in>
+                <out>false</out>
+                <out_high>false</out_high>
+                <smt>true</smt>
+                <ies>true</ies>
+            </gpio0>
             <gpio1>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
@@ -143,7 +156,7 @@
                 <ies>true</ies>
             </gpio1>
             <gpio2>
-		<eint_mode>true</eint_mode>
+				<eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <mode_arr>10000000</mode_arr>
                 <inpull_en>true</inpull_en>
@@ -2128,7 +2141,7 @@
             <device3>
                 <varName>GSENSOR</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x6B</address>
+                <address>0x69</address>
             </device3>
             <device4>
                 <varName>BAROMETER</varName>
@@ -2148,7 +2161,7 @@
             <device7>
                 <varName>GYRO</varName>
                 <channel>I2C_CHANNEL_1</channel>
-                <address>0x69</address>
+                <address>0x6c</address>
             </device7>
             <device8>
                 <varName>EXT_BUCK_VMD1</varName>
