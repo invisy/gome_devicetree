@@ -20,9 +20,9 @@ MTK_INTERNAL_CDEFS += $(foreach t,$(AUTO_ADD_GLOBAL_DEFINE_BY_NAME_VALUE),$(if $
 MTK_GLOBAL_CFLAGS += $(MTK_INTERNAL_CDEFS)
 
 ifneq ($(MTK_K64_SUPPORT), yes)
-BOARD_KERNEL_CMDLINE = bootopt=64S3,32S1,32S1
+BOARD_KERNEL_CMDLINE = bootopt=64S3,32S1,32S1 androidboot.selinux=permissive
 else
-BOARD_KERNEL_CMDLINE = bootopt=64S3,32N2,64N2
+BOARD_KERNEL_CMDLINE = bootopt=64S3,32N2,64N2 androidboot.selinux=permissive
 endif
 
 -include device/mediatek/build/core/soong_config.mk
