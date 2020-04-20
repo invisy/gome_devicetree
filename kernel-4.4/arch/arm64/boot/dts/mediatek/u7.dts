@@ -43,13 +43,13 @@
 	led0:led@0 {
 		compatible = "mediatek,red";
 		led_mode = <0>;
-		data = <1>;
+		data = <0>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
 		led_mode = <0>;
-		data = <1>;
+		data = <0>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
