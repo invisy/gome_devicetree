@@ -163,3 +163,40 @@ $(call inherit-product, build/target/product/verity.mk)
 
 PRODUCT_COPY_FILES +=\
 	$(call find-copy-subdir-files,*,$(LOCAL_PATH)/libcalmodule_qmcX983,vendor)
+
+# Start NFC
+
+DEVICE_MANIFEST_FILE += device/gome/u7/project_manifest/manifest_nfc.xml
+
+# These are the hardware-specific features
+PRODUCT_COPY_FILES += \
+    frameworks/native/data/etc/android.hardware.nfc.hce.xml:system/etc/permissions/android.hardware.nfc.hce.xml \
+    frameworks/native/data/etc/android.hardware.nfc.hcef.xml:system/etc/permissions/android.hardware.nfc.hcef.xml \
+    frameworks/native/data/etc/android.hardware.nfc.xml:system/etc/permissions/android.hardware.nfc.xml
+
+# nfc packages
+PRODUCT_PACKAGES += \
+    com.android.nfc_extras \
+    NfcNci \
+    Tag	\
+    android.hardware.nfc@1.0-impl \
+	android.hardware.nfc@1.0-service
+	
+# NFC config files
+PRODUCT_COPY_FILES += \
+    $(LOCAL_PATH)/nfc/etc/libnfc-nci.conf:vendor/etc/libnfc-nci.conf \
+    $(LOCAL_PATH)/nfc/etc/libnfc-nci-20797b00.conf:vendor/etc/libnfc-nci-20797b00.conf \
+	$(LOCAL_PATH)/nfc/etc/libnfc-nci.conf:system/etc/libnfc-brcm.conf \
+    $(LOCAL_PATH)/nfc/etc/libnfc-nci-20797b00.conf:system/etc/libnfc-brcm-20797b00.conf \
+    $(LOCAL_PATH)/nfc/firmware/BCM20797B0_002.001.043.0005.0009_Generic_NCD_Unsigned_configdata.ncd:$(TARGET_COPY_OUT_VENDOR)/firmware/BCM20797B0_002.001.043.0005.0009_Generic_NCD_Unsigned_configdata.ncd \
+    $(LOCAL_PATH)/nfc/firmware/Generic_unsigned_512_3.ncd:$(TARGET_COPY_OUT_VENDOR)/firmware/Generic_unsigned_512_3.ncd
+
+# NFC Init Files
+PRODUCT_COPY_FILES += \
+     $(LOCAL_PATH)/nfc/etc/init/init.bcm2079x.nfc.rc:vendor/etc/init/init.bcm2079x.nfc.rc
+
+# NFC stock HAL
+PRODUCT_COPY_FILES += \
+     $(LOCAL_PATH)/nfc/nfc_nci.bcm2079x.default.so:$(TARGET_COPY_OUT_VENDOR)/lib64/hw/nfc_nci.bcm2079x.default.so \
+
+# End NFC
