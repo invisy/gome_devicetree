@@ -15,31 +15,19 @@
 
 #include <cust_mag.h>
 #include "qmcX983.h"
+#include "mag.h"
 
-
-
-#define Android_Marshmallow				//Android 6.0
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #endif
 
-#define QMCX983_M_NEW_ARCH
-#ifdef QMCX983_M_NEW_ARCH
-#include "mag.h"
-#endif
-
-
 /*----------------------------------------------------------------------------*/
 #define DEBUG 1
 #define QMCX983_DEV_NAME         "qmcX983"
-#define DRIVER_VERSION          "3.2"
+#define DRIVER_VERSION          "driver version 3.4"
 /*----------------------------------------------------------------------------*/
 
-#define MAX_FAILURE_COUNT	3
-#define QMCX983_RETRY_COUNT	3
-#define	QMCX983_BUFSIZE		0x20
-
-#define QMCX983_AD0_CMP		1
+#define	QMCX983_BUFSIZE		32
 
 #define QMCX983_AXIS_X            0
 #define QMCX983_AXIS_Y            1
@@ -50,15 +38,10 @@
 
 
 #define QMC6983_A1_D1             0
-#define QMC6983_E1		  1	
-#define QMC7983                   2
-#define QMC7983_LOW_SETRESET      3
-#define QMC6983_E1_Metal          4
-#define QMC7983_Vertical          5
-#define QMC7983_Slope             6
-
-
-
+#define QMC6983_E1		  		  1	
+#define QMC6983_E1_Metal          2
+#define QMC7983_Vertical          3
+#define QMC7983_Slope             4
 
 #define CALIBRATION_DATA_SIZE   28
 
@@ -69,51 +52,45 @@
 
 
 static int chip_id = QMC6983_E1;
-static struct mag_hw mag_cust;
-static struct mag_hw *qst_hw = &mag_cust;
 static struct i2c_client *this_client = NULL;
 static short qmcd_delay = QMCX983_DEFAULT_DELAY;
 
-// calibration msensor and orientation data
-static int sensor_data[CALIBRATION_DATA_SIZE] = {0};
+//static int sensor_data[CALIBRATION_DATA_SIZE] = {0};
 static struct mutex sensor_data_mutex;
 static struct mutex read_i2c_xyz;
-static struct mutex accel_mutex;
 
 static unsigned char regbuf[2] = {0};
+static int OTP_Kx;
+static int OTP_Ky;
 
-static DECLARE_WAIT_QUEUE_HEAD(data_ready_wq);
-static DECLARE_WAIT_QUEUE_HEAD(open_wq);
+
 
 static atomic_t open_flag = ATOMIC_INIT(0);
-static atomic_t m_flag = ATOMIC_INIT(0);
-static atomic_t o_flag = ATOMIC_INIT(0);
 static unsigned char v_open_flag = 0x00;
 
-static int16_t accel_data[3] = {0};
-static int g_rawMag[3] = {0};
-/*----------------------------------------------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
 static const struct i2c_device_id qmcX983_i2c_id[] = {{QMCX983_DEV_NAME,0},{}};
 
+static struct mag_hw mag_cust;
+static struct mag_hw *qst_hw = &mag_cust;
+
+/* For  driver get cust info */
+struct mag_hw *get_cust_mag(void)
+{
+	return &mag_cust;
+}
+
 /*----------------------------------------------------------------------------*/
 static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id);
-static int qmcX983_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
 static int qmcX983_i2c_remove(struct i2c_client *client);
 static int qmcX983_suspend(struct device *dev);
 static int qmcX983_resume(struct device *dev);
+static int qmcX983_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
+static int qmcX983_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
+static int qmcX983_flush(void);
+static int qmcX983_m_get_data(int *x, int *y, int *z, int *status);
 
-
-#ifdef QST_Dummygyro
-	static atomic_t g_flag = ATOMIC_INIT(0);
-#ifdef QST_Dummygyro_VirtualSensors
-	static atomic_t gr_flag = ATOMIC_INIT(0);
-	static atomic_t la_flag = ATOMIC_INIT(0);
-	static atomic_t rv_flag = ATOMIC_INIT(0);
-#endif
-#endif
-DECLARE_COMPLETION(data_updated);
 
 /*----------------------------------------------------------------------------*/
 typedef enum {
@@ -127,7 +104,7 @@ typedef enum {
 /*----------------------------------------------------------------------------*/
 struct qmcX983_i2c_data {
     struct i2c_client *client;
-    struct mag_hw *hw;
+    struct mag_hw hw;
     atomic_t layout;
     atomic_t trace;
 	struct hwmsen_convert   cvt;
@@ -169,19 +146,19 @@ static struct i2c_driver qmcX983_i2c_driver = {
 	.id_table = qmcX983_i2c_id,
 };
 
-#ifdef QMCX983_M_NEW_ARCH
+
 static int qmcX983_local_init(void);
-static int qmcX983_remove(void);
+static int qmcX983_local_remove(void);
 static int qmcX983_init_flag =-1; // 0<==>OK -1 <==> fail
 
 
 static struct mag_init_info qmcX983_init_info = {
-        .name = "qmcX983",
+        .name = QMCX983_DEV_NAME,
         .init = qmcX983_local_init,
-        .uninit = qmcX983_remove,
+        .uninit = qmcX983_local_remove,
 };
 
-#endif
+
 
 static int mag_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u8 len)
 {
@@ -294,9 +271,6 @@ static int I2C_TxData(char *txData, int length)
  * note data will be read by multi-byte protocol into a 6 byte structure
  */
 
-static int OTP_Kx;
-static int OTP_Ky;
-
 static int qmcX983_read_mag_xyz(int *data)
 {
 	int res;
@@ -304,40 +278,32 @@ static int qmcX983_read_mag_xyz(int *data)
 	unsigned char databuf[6];
 	int hw_d[3] = {0};
 
-	int output[3]={0};
 	int t1 = 0;
 	unsigned char rdy = 0;
 	struct i2c_client *client = this_client;
 	struct qmcX983_i2c_data *clientdata = i2c_get_clientdata(client);
-	int i;
 
     MSE_FUN();
 
 	/* Check status register for data availability */
-	while(!(rdy & 0x07) && t1<3){
-		databuf[0]=STA_REG_ONE;
-		res=I2C_RxData(databuf,1);
-		rdy=databuf[0];
+	while(!(rdy & 0x07) && (t1<3)){
+		databuf[0] = STA_REG_ONE;
+		res = I2C_RxData(databuf,1);
+		rdy = databuf[0];
 		MSE_LOG("QMCX983 Status register is (%02X)\n", rdy);
 		t1 ++;
 	}
-
-	//MSE_LOG("QMCX983 read mag_xyz begin\n");
-
-	//mutex_lock(&read_i2c_xyz);
 
 	databuf[0] = OUT_X_L;
 
 	res = I2C_RxData(databuf, 6);
 	if(res != 0)
     {
-		//mutex_unlock(&read_i2c_xyz);
 		return -EFAULT;
 	}
-	for(i=0;i<6;i++)
-		mag_data[i]=databuf[i];
-	//mutex_unlock(&read_i2c_xyz);
 
+	memcpy(mag_data,databuf,sizeof(databuf));
+	
 	MSE_LOG("QMCX983 mag_data[%02x, %02x, %02x, %02x, %02x, %02x]\n",
 		mag_data[0], mag_data[1], mag_data[2],
 		mag_data[3], mag_data[4], mag_data[5]);
@@ -345,23 +311,20 @@ static int qmcX983_read_mag_xyz(int *data)
 	hw_d[0] = (short)(((mag_data[1]) << 8) | mag_data[0]);
 	hw_d[1] = (short)(((mag_data[3]) << 8) | mag_data[2]);
 	hw_d[2] = (short)(((mag_data[5]) << 8) | mag_data[4]);
-	hw_d[2] = (short)(hw_d[2] - hw_d[0]*OTP_Kx/50 - hw_d[1]*OTP_Ky/50);
 
+	//Unit:mG  1G = 100uT = 1000mG
 	hw_d[0] = hw_d[0] * 1000 / clientdata->xy_sensitivity;
 	hw_d[1] = hw_d[1] * 1000 / clientdata->xy_sensitivity;
 	hw_d[2] = hw_d[2] * 1000 / clientdata->z_sensitivity;
 
-	MSE_LOG("Hx=%d, Hy=%d, Hz=%d, sen,%d\n",hw_d[0],hw_d[1],hw_d[2],clientdata->xy_sensitivity);
+	MSE_LOG("Hx=%d, Hy=%d, Hz=%d\n",hw_d[0],hw_d[1],hw_d[2]);
 
-	output[clientdata->cvt.map[QMCX983_AXIS_X]] = clientdata->cvt.sign[QMCX983_AXIS_Y]*hw_d[QMCX983_AXIS_X];
-	output[clientdata->cvt.map[QMCX983_AXIS_Y]] = clientdata->cvt.sign[QMCX983_AXIS_X]*hw_d[QMCX983_AXIS_Y];
-	output[clientdata->cvt.map[QMCX983_AXIS_Z]] = clientdata->cvt.sign[QMCX983_AXIS_Z]*hw_d[QMCX983_AXIS_Z];
+	data[QMCX983_AXIS_X] = clientdata->cvt.sign[QMCX983_AXIS_X]*hw_d[clientdata->cvt.map[QMCX983_AXIS_X]];
+	data[QMCX983_AXIS_Y] = clientdata->cvt.sign[QMCX983_AXIS_Y]*hw_d[clientdata->cvt.map[QMCX983_AXIS_Y]];
+	data[QMCX983_AXIS_Z] = clientdata->cvt.sign[QMCX983_AXIS_Z]*hw_d[clientdata->cvt.map[QMCX983_AXIS_Z]];
 
-	data[0] = output[QMCX983_AXIS_X];
-	data[1] = output[QMCX983_AXIS_Y];
-	data[2] = output[QMCX983_AXIS_Z];
-
-	MSE_LOG("QMCX983 data [%d, %d, %d],otp,%d,%d\n", data[0], data[1], data[2],OTP_Kx,OTP_Ky);
+	MSE_LOG("QMCX983 data [%d, %d, %d]\n", data[0], data[1], data[2]);
+	
 	return res;
 }
 
@@ -464,7 +427,6 @@ static void qmcX983_stop_measure(struct i2c_client *client)
 static int qmcX983_enable(struct i2c_client *client)
 {
 
-	#if 1  // change the peak to 1us from 2 us 
 	unsigned char data[2];
 	int err;
 
@@ -476,8 +438,7 @@ static int qmcX983_enable(struct i2c_client *client)
 	data[0] = 0x20;
 	err = I2C_TxData(data, 2);
 
-    //For E1 & 7983, enable chip filter & set fastest set_reset
-	if(chip_id == QMC6983_E1 || chip_id == QMC7983 || chip_id == QMC7983_LOW_SETRESET)
+  	if(chip_id != QMC6983_A1_D1)
 	{
 
 		data[1] = 0x80;
@@ -489,14 +450,20 @@ static int qmcX983_enable(struct i2c_client *client)
 		err = I2C_TxData(data, 2);				
 	}
 	
-	#endif
+	if(chip_id == QMC6983_E1_Metal || chip_id == QMC7983_Slope)
+	{
+		data[1] = 0x80;
+		data[0] = 0x1b;
+		err = I2C_TxData(data, 2); 			
+	}
 	
 	MSE_LOG("start measure!\n");
 	qmcX983_start_measure(client);
 
 	qmcX983_set_range(QMCX983_RNG_8G);
-	qmcX983_set_ratio(QMCX983_SETRESET_FREQ_FAST);				//the ratio must not be 0, different with qmc5983
-
+	qmcX983_set_ratio(11);				//the ratio must not be 0, different with qmc5983
+	usleep_range(20000,30000); //fixit for amr ready
+	qmcX983_start_measure(client);
 
 	return 0;
 }
@@ -550,44 +517,6 @@ static void qmcX983_power(struct mag_hw *hw, unsigned int on)
 	power_on = on;
 }
 
-// Daemon application save the data
-static int QMC_SaveData(int *buf)
-{
-#if DEBUG
-	struct i2c_client *client = this_client;
-	struct qmcX983_i2c_data *data = i2c_get_clientdata(client);
-#endif
-
-	mutex_lock(&sensor_data_mutex);
-	memcpy(sensor_data, buf, sizeof(sensor_data));
-	
-	mutex_unlock(&sensor_data_mutex);
-
-#if DEBUG
-	if((data != NULL) && (atomic_read(&data->trace) & QMC_DATA_DEBUG)){
-		MSE_LOG("Get daemon data: %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d!\n",
-			sensor_data[0],sensor_data[1],sensor_data[2],sensor_data[3],
-			sensor_data[4],sensor_data[5],sensor_data[6],sensor_data[7],
-			sensor_data[8],sensor_data[9],sensor_data[10],sensor_data[11],
-			sensor_data[12],sensor_data[13],sensor_data[14],sensor_data[15]);
-	}
-#endif
-
-	return 0;
-
-}
-//TODO
-static int QMC_GetOpenStatus(void)
-{
-	wait_event_interruptible(open_wq, (atomic_read(&open_flag) != 0));
-	return atomic_read(&open_flag);
-}
-static int QMC_GetCloseStatus(void)
-{
-	wait_event_interruptible(open_wq, (atomic_read(&open_flag) <= 0));
-	return atomic_read(&open_flag);
-}
-
 /*----------------------------------------------------------------------------*/
 static int qmcX983_ReadChipInfo(char *buf, int bufsize)
 {
@@ -600,24 +529,98 @@ static int qmcX983_ReadChipInfo(char *buf, int bufsize)
 		*buf = 0;
 		return -EINVAL;
 	}
-	if(chip_id == QMC7983)
+	if(chip_id == QMC7983_Vertical)
 	{
-	   snprintf(buf, bufsize, "qmc7983 Chip");	
+		snprintf(buf, bufsize, "QMC7983_Vertical Chip");	
 	}
-	else if(chip_id == QMC7983_LOW_SETRESET)
+	else if(chip_id == QMC7983_Slope)
 	{
-	   snprintf(buf, bufsize, "qmc7983 LOW SETRESET Chip");
+		snprintf(buf, bufsize, "QMC7983_Slope Chip");
 	}
 	else if(chip_id == QMC6983_E1)
 	{
-	   snprintf(buf, bufsize, "qmc6983 E1 Chip");
+		snprintf(buf, bufsize, "QMC6983_E1 Chip");
+	}
+	else if(chip_id == QMC6983_E1_Metal)
+	{
+		snprintf(buf, bufsize, "QMC6983_E1_Metal Chip");
 	}
 	else if(chip_id == QMC6983_A1_D1)
 	{
-	   snprintf(buf, bufsize, "qmc6983 A1/D1 Chip");	
-	}	
+		snprintf(buf, bufsize, "QMC6983_A1_D1 Chip");	
+	}		 
 	
 	return 0;
+}
+
+
+static int qmcX983_AxisInfoToPat(
+	const uint8_t axis_order[3],
+	const uint8_t axis_sign[3],
+	int16_t *pat)
+{
+	/* check invalid input */
+	if ((axis_order[0] < 0) || (axis_order[0] > 2) ||
+	   (axis_order[1] < 0) || (axis_order[1] > 2) ||
+	   (axis_order[2] < 0) || (axis_order[2] > 2) ||
+	   (axis_sign[0] < 0) || (axis_sign[0] > 1) ||
+	   (axis_sign[1] < 0) || (axis_sign[1] > 1) ||
+	   (axis_sign[2] < 0) || (axis_sign[2] > 1) ||
+	  ((axis_order[0] * axis_order[1] * axis_order[2]) != 0) ||
+	  ((axis_order[0] + axis_order[1] + axis_order[2]) != 3)) {
+		*pat = 0;
+		return -1;
+	}
+	/* calculate pat
+	 * BIT MAP
+	 * [8] = sign_x
+	 * [7] = sign_y
+	 * [6] = sign_z
+	 * [5:4] = order_x
+	 * [3:2] = order_y
+	 * [1:0] = order_z
+	 */
+	*pat = ((int16_t)axis_sign[0] << 8);
+	*pat += ((int16_t)axis_sign[1] << 7);
+	*pat += ((int16_t)axis_sign[2] << 6);
+	*pat += ((int16_t)axis_order[0] << 4);
+	*pat += ((int16_t)axis_order[1] << 2);
+	*pat += ((int16_t)axis_order[2] << 0);
+	return 0;
+}
+
+static int16_t qmcX983_SetCert(void)
+{
+	struct i2c_client *client = this_client;
+	struct qmcX983_i2c_data *data = i2c_get_clientdata(client);
+	uint8_t axis_sign[3] = {0};
+	uint8_t axis_order[3] = {0};
+	int16_t ret = 0;
+	int i = 0;
+	int16_t cert = 0x06;
+
+	for (i = 0; i < 3; i++)
+		axis_order[i] = (uint8_t)data->cvt.map[i];
+
+	for (i = 0; i < 3; i++) {
+		axis_sign[i] = (uint8_t)data->cvt.sign[i];
+		if (axis_sign[i] > 0)
+			axis_sign[i] = 0;
+		else if (axis_sign[i] < 0)
+			axis_sign[i] = 1;
+	}
+#if 0
+	axis_order[0] = 0;
+	axis_order[1] = 1;
+	axis_order[2] = 2;
+	axis_sign[0] = 0;
+	axis_sign[1] = 0;
+	axis_sign[2] = 0;
+#endif
+	ret = qmcX983_AxisInfoToPat(axis_order, axis_sign, &cert);
+	if (ret != 0)
+		return 0;
+	return cert;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -636,17 +639,6 @@ static ssize_t show_sensordata_value(struct device_driver *ddri, char *buf)
 
 	return scnprintf(buf, PAGE_SIZE, "%d %d %d\n", sensordata[0],sensordata[1],sensordata[2]);
 }
-/*----------------------------------------------------------------------------*/
-static ssize_t show_posturedata_value(struct device_driver *ddri, char *buf)
-{
-	int tmp[3];
-
-	tmp[0] = sensor_data[9] * CONVERT_O / CONVERT_O_DIV;
-	tmp[1] = sensor_data[10] * CONVERT_O / CONVERT_O_DIV;
-	tmp[2] = sensor_data[11] * CONVERT_O / CONVERT_O_DIV;
-	
-	return scnprintf(buf, PAGE_SIZE, "%d, %d, %d\n", tmp[0],tmp[1], tmp[2]);
-}
 
 /*----------------------------------------------------------------------------*/
 static ssize_t show_layout_value(struct device_driver *ddri, char *buf)
@@ -655,7 +647,7 @@ static ssize_t show_layout_value(struct device_driver *ddri, char *buf)
 	struct qmcX983_i2c_data *data = i2c_get_clientdata(client);
 
 	return scnprintf(buf, PAGE_SIZE, "(%d, %d)\n[%+2d %+2d %+2d]\n[%+2d %+2d %+2d]\n",
-		data->hw->direction,atomic_read(&data->layout),	data->cvt.sign[0], data->cvt.sign[1],
+		data->hw.direction,atomic_read(&data->layout),	data->cvt.sign[0], data->cvt.sign[1],
 		data->cvt.sign[2],data->cvt.map[0], data->cvt.map[1], data->cvt.map[2]);
 }
 /*----------------------------------------------------------------------------*/
@@ -672,13 +664,13 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, s
 		{
 			MSE_ERR("HWMSEN_GET_CONVERT function error!\r\n");
 		}
-		else if(!hwmsen_get_convert(data->hw->direction, &data->cvt))
+		else if(!hwmsen_get_convert(data->hw.direction, &data->cvt))
 		{
-			MSE_ERR("invalid layout: %d, restore to %d\n", layout, data->hw->direction);
+			MSE_ERR("invalid layout: %d, restore to %d\n", layout, data->hw.direction);
 		}
 		else
 		{
-			MSE_ERR("invalid layout: (%d, %d)\n", layout, data->hw->direction);
+			MSE_ERR("invalid layout: (%d, %d)\n", layout, data->hw.direction);
 			hwmsen_get_convert(0, &data->cvt);
 		}
 	}
@@ -693,18 +685,15 @@ static ssize_t store_layout_value(struct device_driver *ddri, const char *buf, s
 static ssize_t show_status_value(struct device_driver *ddri, char *buf)
 {
 	struct i2c_client *client = this_client;
-	struct qmcX983_i2c_data *data = i2c_get_clientdata(client);
+	struct qmcX983_i2c_data *obj = i2c_get_clientdata(client);
 	ssize_t len = 0;
 
-	if(data->hw)
-	{
+	//if(obj->hw)
+	//{
 		len += scnprintf(buf+len, PAGE_SIZE-len, "CUST: %d %d (%d %d)\n",
-			data->hw->i2c_num, data->hw->direction, data->hw->power_id, data->hw->power_vol);
-	}
-	else
-	{
-		len += scnprintf(buf+len, PAGE_SIZE-len, "CUST: NULL\n");
-	}
+			obj->hw.i2c_num, obj->hw.direction, obj->hw.power_id, obj->hw.power_vol);
+	//}
+
 
 	len += scnprintf(buf+len, PAGE_SIZE-len, "OPEN: %d\n", atomic_read(&dev_open_count));
 	len += scnprintf(buf+len, PAGE_SIZE-len, "open_flag = 0x%x, v_open_flag=0x%x\n",
@@ -749,38 +738,11 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	return count;
 }
 
-static ssize_t store_accel_value(struct device_driver *ddri, const char *buf, size_t count)
-{
-	int16_t *acc_data;
-
-	if (count == 0)
-		return 0;
-
-	acc_data = (int16_t *)buf;
-
-	mutex_lock(&accel_mutex);	
-	accel_data[0] = acc_data[0];
-	accel_data[1] = acc_data[1];
-	accel_data[2] = acc_data[2];
-	mutex_unlock(&accel_mutex);
-	
-	return count;
-}
-static ssize_t show_daemon_name(struct device_driver *ddri, char *buf)
-{
-	char strbuf[QMCX983_BUFSIZE];
-	snprintf(strbuf, sizeof(strbuf), "qmcX983d");
-	return scnprintf(buf, sizeof(strbuf), "%s", strbuf);
-}
-
 static ssize_t show_WRregisters_value(struct device_driver *ddri, char *buf)
 {
 	int res;
 
 	unsigned char databuf[2];
-
-//	struct i2c_client *client = this_client;
-	//struct qmcX983_i2c_data *clientdata = i2c_get_clientdata(client);
 
 	MSE_FUN();
 
@@ -837,7 +799,7 @@ static ssize_t store_registers_value(struct device_driver *ddri, const char *buf
 	return count;
 }
 
-static ssize_t show_dumpallreg_value(struct device_driver *ddri, char *buf)
+static ssize_t show_regiter_map(struct device_driver *ddri, char *buf)
 {
 	int res;
 	int i =0;
@@ -845,9 +807,6 @@ static ssize_t show_dumpallreg_value(struct device_driver *ddri, char *buf)
 	char tempstrbuf[24];
 	unsigned char databuf[2];
 	int length=0;
-
-	//struct i2c_client *client = this_client;
-	//struct qmcX983_i2c_data *clientdata = i2c_get_clientdata(client);
 
 	MSE_FUN();
 
@@ -900,34 +859,73 @@ static ssize_t show_shipment_test(struct device_driver *ddri, char *buf)
 	return sprintf(buf, "%s\n", result);        
 }
 
+static ssize_t show_OTP_value(struct device_driver *ddri, char *buf)
+{	
+	return sprintf(buf,"%d,%d\n",OTP_Kx,OTP_Ky);	
+}
+
+static ssize_t show_chip_orientation(struct device_driver *ddri, char *buf)
+{
+	ssize_t _tLength = 0;
+	struct mag_hw *_ptAccelHw = qst_hw;
+
+	MSE_LOG("[%s] default direction: %d\n", __func__, _ptAccelHw->direction);
+
+	_tLength = snprintf(buf, PAGE_SIZE, "default direction = %d\n", _ptAccelHw->direction);
+
+	return _tLength;
+}
+
+static ssize_t store_chip_orientation(struct device_driver *ddri, const char *buf, size_t tCount)
+{
+	int _nDirection = 0;
+	int ret = 0;
+	struct qmcX983_i2c_data *_pt_i2c_obj = i2c_get_clientdata(this_client);
+
+	if (_pt_i2c_obj == NULL)
+		return 0;
+
+	ret = kstrtoint(buf, 10, &_nDirection);
+	if (ret != 0) {
+		if (hwmsen_get_convert(_nDirection, &_pt_i2c_obj->cvt))
+			MSE_LOG("ERR: fail to set direction\n");
+	}
+
+	MSE_LOG("[%s] set direction: %d\n", __func__, _nDirection);
+
+	return tCount;
+}
+
+
+
 /*----------------------------------------------------------------------------*/
 static DRIVER_ATTR(shipmenttest,S_IRUGO | S_IWUSR, show_shipment_test, store_shipment_test);
-static DRIVER_ATTR(dumpallreg,  S_IRUGO , show_dumpallreg_value, NULL);
+static DRIVER_ATTR(regmap,  S_IRUGO , show_regiter_map, NULL);
 static DRIVER_ATTR(WRregisters, S_IRUGO | S_IWUSR, show_WRregisters_value, store_WRregisters_value);
 static DRIVER_ATTR(registers,   S_IRUGO | S_IWUSR, show_registers_value, store_registers_value);
-static DRIVER_ATTR(daemon,      S_IRUGO, show_daemon_name, NULL);
 static DRIVER_ATTR(chipinfo,    S_IRUGO, show_chipinfo_value, NULL);
 static DRIVER_ATTR(sensordata,  S_IRUGO, show_sensordata_value, NULL);
-static DRIVER_ATTR(posturedata, S_IRUGO, show_posturedata_value, NULL);
 static DRIVER_ATTR(layout,      S_IRUGO | S_IWUSR, show_layout_value, store_layout_value);
 static DRIVER_ATTR(status,      S_IRUGO, show_status_value, NULL);
+static DRIVER_ATTR(orientation, S_IWUSR | S_IRUGO, show_chip_orientation, store_chip_orientation);
 static DRIVER_ATTR(trace,       S_IRUGO | S_IWUSR, show_trace_value, store_trace_value);
-static DRIVER_ATTR(accel,       S_IRUGO | S_IWUSR, NULL, store_accel_value);
+static DRIVER_ATTR(otp,			S_IRUGO, show_OTP_value, NULL);
 /*----------------------------------------------------------------------------*/
 static struct driver_attribute *qmcX983_attr_list[] = {
 	&driver_attr_shipmenttest,
-	&driver_attr_dumpallreg,
+	&driver_attr_regmap,
     &driver_attr_WRregisters,
 	&driver_attr_registers,
-    &driver_attr_daemon,
 	&driver_attr_chipinfo,
 	&driver_attr_sensordata,
-	&driver_attr_posturedata,
 	&driver_attr_layout,
 	&driver_attr_status,
+	&driver_attr_orientation,
 	&driver_attr_trace,
-	&driver_attr_accel,
+	&driver_attr_otp,
 };
+
+
 /*----------------------------------------------------------------------------*/
 static int qmcX983_create_attr(struct device_driver *driver)
 {
@@ -1003,22 +1001,12 @@ static long qmcX983_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 	void __user *argp = (void __user *)arg;
 
 	/* NOTE: In this function the size of "char" should be 1-byte. */
-	char buff[QMCX983_BUFSIZE];				/* for chip information */
+	//char buff[QMCX983_BUFSIZE];				/* for chip information */
 	char rwbuf[16]; 		/* for READ/WRITE */
-	int value[CALIBRATION_DATA_SIZE];			/* for SET_YPR */
-	int delay;			/* for GET_DELAY */
-	int status; 			/* for OPEN/CLOSE_STATUS */
-	int16_t acc_buf[3];	/* for GET_ACCEL */
 	int ret =-1;				
-	short sensor_status;		/* for Orientation and Msensor status */
-	unsigned char data[16] = {0};
-	int vec[3] = {0};
+
 	struct i2c_client *client = this_client;
 	struct qmcX983_i2c_data *clientdata = i2c_get_clientdata(client);
-	struct hwm_sensor_data osensor_data;
-	uint32_t enable;
-
-	int err;
 
 	if ((clientdata != NULL) && (atomic_read(&clientdata->trace) & QMC_FUN_DEBUG))
 		MSE_LOG("qmcX983_unlocked_ioctl !cmd= 0x%x\n", cmd);
@@ -1077,219 +1065,7 @@ static long qmcX983_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 			return -EFAULT;
 		}
 		break;
-
-	case QMCX983_SET_RANGE:
-		if (copy_from_user(data, (unsigned char *)arg, 1) != 0) {
-			#if DEBUG
-			MSE_ERR("copy_from_user error\n");
-			#endif
-			return -EFAULT;
-		}
-		err = qmcX983_set_range(*data);
-		return err;
-
-	case QMCX983_SET_MODE:
-		if (copy_from_user(data, (unsigned char *)arg, 1) != 0) {
-			#if DEBUG
-			MSE_ERR("copy_from_user error\n");
-			#endif
-			return -EFAULT;
-		}
-		err = qmcX983_set_mode(*data);
-		return err;
-
-
-	case QMCX983_READ_MAGN_XYZ:
-		if(argp == NULL){
-			MSE_ERR("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-
-		err = qmcX983_read_mag_xyz(vec);
-
-		MSE_LOG("mag_data[%d, %d, %d]\n",
-				vec[0],vec[1],vec[2]);
-			if(copy_to_user(argp, vec, sizeof(vec)))
-			{
-				return -EFAULT;
-			}
-			break;
-
-/*------------------------------for daemon------------------------*/
-	case QMC_IOCTL_SET_YPR:
-		if(argp == NULL)
-		{
-			MSE_LOG("invalid argument.");
-			return -EINVAL;
-		}
-		if(copy_from_user(value, argp, sizeof(value)))
-		{
-			MSE_LOG("copy_from_user failed.");
-			return -EFAULT;
-		}
-		QMC_SaveData(value);
-		break;
-
-	case QMC_IOCTL_GET_ACCEL:
-		MSE_LOG("IOCTL_GET_ACCEL called.");
-		mutex_lock(&accel_mutex);
-		acc_buf[0] = accel_data[0];
-		acc_buf[1] = accel_data[1];
-		acc_buf[2] = accel_data[2];
-		mutex_unlock(&accel_mutex);
-		
-		if (copy_to_user(argp, &acc_buf, sizeof(acc_buf))) {
-			MSE_ERR("copy_to_user failed.");
-			return -EFAULT;
-		}		
-		break;
-		
-	case QMC_IOCTL_GET_OPEN_STATUS:
-		status = QMC_GetOpenStatus();
-		if(copy_to_user(argp, &status, sizeof(status)))
-		{
-			MSE_LOG("copy_to_user failed.");
-			return -EFAULT;
-		}
-		break;
-
-	case QMC_IOCTL_GET_CLOSE_STATUS:
-		
-		status = QMC_GetCloseStatus();
-		if(copy_to_user(argp, &status, sizeof(status)))
-		{
-			MSE_LOG("copy_to_user failed.");
-			return -EFAULT;
-		}
-		break;
-
-	case QMC_IOC_GET_MFLAG:
-		sensor_status = atomic_read(&m_flag);
-		if(copy_to_user(argp, &sensor_status, sizeof(sensor_status)))
-		{
-			MSE_LOG("copy_to_user failed.");
-			return -EFAULT;
-		}
-		break;
-
-	case QMC_IOC_GET_OFLAG:
-		sensor_status = atomic_read(&o_flag);
-		if(copy_to_user(argp, &sensor_status, sizeof(sensor_status)))
-		{
-			MSE_LOG("copy_to_user failed.");
-			return -EFAULT;
-		}
-		break;
-
-	case QMC_IOCTL_GET_DELAY:
-	    delay = qmcd_delay;
-	    if (copy_to_user(argp, &delay, sizeof(delay))) {
-	         MSE_LOG("copy_to_user failed.");
-	         return -EFAULT;
-	    }
-	    break;
-	/*-------------------------for ftm------------------------**/
-
-	case MSENSOR_IOCTL_READ_CHIPINFO:       //reserved?
-		if(argp == NULL)
-		{
-			MSE_ERR("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-
-		qmcX983_ReadChipInfo(buff, QMCX983_BUFSIZE);
-		if(copy_to_user(argp, buff, strlen(buff)+1))
-		{
-			return -EFAULT;
-		}
-		break;
-
-	case MSENSOR_IOCTL_READ_SENSORDATA:	//for daemon
-		if(argp == NULL)
-		{
-			MSE_LOG("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-
-		qmcX983_read_mag_xyz(vec);
-
-		if ((clientdata != NULL) && (atomic_read(&clientdata->trace) & QMC_DATA_DEBUG))
-			MSE_LOG("mag_data[%d, %d, %d]\n",vec[0],vec[1],vec[2]);
-		
-		snprintf(buff, sizeof(buff), "%x %x %x", vec[0], vec[1], vec[2]);
-		if(copy_to_user(argp, buff, strlen(buff)+1))
-		{
-			return -EFAULT;
-		}
-
-			break;
-
-	case MSENSOR_IOCTL_SENSOR_ENABLE:
-
-		if(argp == NULL)
-		{
-			MSE_ERR("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-		if(copy_from_user(&enable, argp, sizeof(enable)))
-		{
-			MSE_LOG("copy_from_user failed.");
-			return -EFAULT;
-		}
-		else
-		{
-			if(enable == 1)
-			{
-				atomic_set(&m_flag, 1);
-				v_open_flag |= 0x01;
-				/// we start measurement at here
-				//qmcX983_start_measure(this_client);
-				qmcX983_enable(this_client);
-			}
-			else
-			{
-				atomic_set(&m_flag, 0);
-				v_open_flag &= 0x3e;
-			}
-			// check we need stop sensor or not
-			if(v_open_flag==0)
-				qmcX983_disable(this_client);
-
-			atomic_set(&open_flag, v_open_flag);
-
-			wake_up(&open_wq);
-
-			MSE_ERR("qmcX983 v_open_flag = 0x%x,open_flag= 0x%x\n",v_open_flag, atomic_read(&open_flag));
-		}
-		break;
-
-	case MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
-		if(argp == NULL)
-		{
-			MSE_ERR("IO parameter pointer is NULL!\r\n");
-			break;
-		}
-
-
-		mutex_lock(&sensor_data_mutex);
-
-		osensor_data.values[0] = sensor_data[8];
-		osensor_data.values[1] = sensor_data[9];
-		osensor_data.values[2] = sensor_data[10];
-		osensor_data.status = sensor_data[11];
-		osensor_data.value_divide = CONVERT_O_DIV;
-
-		mutex_unlock(&sensor_data_mutex);
-
-		snprintf(buff, sizeof(buff), "%x %x %x %x %x", osensor_data.values[0], osensor_data.values[1],
-			osensor_data.values[2],osensor_data.status,osensor_data.value_divide);
-		if(copy_to_user(argp, buff, strlen(buff)+1))
-		{
-			return -EFAULT;
-		}
-
-		break;
-
+	
 	default:
 		MSE_ERR("%s not supported = 0x%04x", __FUNCTION__, cmd);
 		return -ENOIOCTLCMD;
@@ -1299,159 +1075,21 @@ static long qmcX983_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned
 	return 0;
 }
 
-#ifdef CONFIG_COMPAT
-static long qmcX983_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	long err = 0;
-	void __user *arg64 = compat_ptr(arg);
-
-	if (!file->f_op || !file->f_op->unlocked_ioctl) {
-		MSE_ERR("");
-	}
-
-	switch (cmd) {
-	/* ================================================================ */
-	case COMPAT_QMC_IOCTL_WRITE:
-		err = file->f_op->unlocked_ioctl(file, QMC_IOCTL_WRITE, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMC_IOCTL_WRITE execute failed! err = %ld\n", err);
-		break;
-
-	/* ================================================================ */
-	case COMPAT_QMC_IOCTL_READ:
-		err = file->f_op->unlocked_ioctl(file, QMC_IOCTL_READ, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMC_IOCTL_READ execute failed! err = %ld\n", err);
-		break;
-
-	case COMPAT_QMCX983_SET_RANGE:
-		err = file->f_op->unlocked_ioctl(file, QMCX983_SET_RANGE, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMCX983_SET_RANGE execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	case COMPAT_QMCX983_SET_MODE:
-		err = file->f_op->unlocked_ioctl(file, QMCX983_SET_MODE, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMCX983_SET_MODE execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	case COMPAT_QMCX983_READ_MAGN_XYZ:
-		err = file->f_op->unlocked_ioctl(file, QMCX983_READ_MAGN_XYZ, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMCX983_READ_MAGN_XYZ execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	case COMPAT_QMC_IOCTL_SET_YPR:
-		err = file->f_op->unlocked_ioctl(file, QMC_IOCTL_SET_YPR, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMC_IOCTL_SET_YPR execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	case COMPAT_QMC_IOCTL_GET_OPEN_STATUS:
-		err = file->f_op->unlocked_ioctl(file, QMC_IOCTL_GET_OPEN_STATUS, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMC_IOCTL_GET_OPEN_STATUS execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	case COMPAT_QMC_IOCTL_GET_CLOSE_STATUS:
-		err = file->f_op->unlocked_ioctl(file, QMC_IOCTL_GET_CLOSE_STATUS, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMC_IOCTL_GET_CLOSE_STATUS execute failed! err = %ld\n", err);
-
-		break;
-
-	case COMPAT_QMC_IOC_GET_MFLAG:
-		err = file->f_op->unlocked_ioctl(file, QMC_IOC_GET_MFLAG, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMC_IOC_GET_MFLAG execute failed! err = %ld\n", err);
-
-		break;
-
-	case COMPAT_QMC_IOC_GET_OFLAG:
-		err = file->f_op->unlocked_ioctl(file, QMC_IOC_GET_OFLAG, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMC_IOC_GET_OFLAG execute failed! err = %ld\n", err);
-
-		break;
-
-	case COMPAT_QMC_IOCTL_GET_DELAY:
-		err = file->f_op->unlocked_ioctl(file, QMC_IOCTL_GET_DELAY, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("QMC_IOCTL_GET_DELAY execute failed! err = %ld\n", err);
-		break;
-
-	case COMPAT_MSENSOR_IOCTL_READ_CHIPINFO:
-		err = file->f_op->unlocked_ioctl(file, MSENSOR_IOCTL_READ_CHIPINFO, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("MSENSOR_IOCTL_READ_CHIPINFO execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	case COMPAT_MSENSOR_IOCTL_READ_SENSORDATA:
-		err = file->f_op->unlocked_ioctl(file, MSENSOR_IOCTL_READ_SENSORDATA, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("MSENSOR_IOCTL_READ_SENSORDATA execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	case COMPAT_MSENSOR_IOCTL_SENSOR_ENABLE:
-		err = file->f_op->unlocked_ioctl(file, MSENSOR_IOCTL_SENSOR_ENABLE, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("MSENSOR_IOCTL_SENSOR_ENABLE execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	case COMPAT_MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
-		err = file->f_op->unlocked_ioctl(file, MSENSOR_IOCTL_READ_FACTORY_SENSORDATA, (unsigned long)arg64);
-		if (err < 0)
-			MSE_ERR("MSENSOR_IOCTL_READ_FACTORY_SENSORDATA execute failed! err = %ld\n", err);
-
-		break;
-
-	/* ================================================================ */
-	default :
-		MSE_ERR("ERR: 0x%4x CMD not supported!", cmd);
-		return (-ENOIOCTLCMD);
-
-		break;
-	}
-
-	return err;
-}
-
-#endif
 /*----------------------------------------------------------------------------*/
 static struct file_operations qmcX983_fops = {
 //	.owner = THIS_MODULE,
 	.open = qmcX983_open,
 	.release = qmcX983_release,
 	.unlocked_ioctl = qmcX983_unlocked_ioctl,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = qmcX983_compat_ioctl,
-#endif
 };
 /*----------------------------------------------------------------------------*/
 static struct miscdevice qmcX983_device = {
     .minor = MISC_DYNAMIC_MINOR,
-    .name = "msensor",
+    .name = "qst_msensor",
     .fops = &qmcX983_fops,
 };
 /*----------------------------------------------------------------------------*/
-#ifdef QMCX983_M_NEW_ARCH
+
 static int qmcX983_m_open_report_data(int en)
 {
 	return 0;
@@ -1483,38 +1121,33 @@ static int qmcX983_m_enable(int en)
 {
 	struct qmcX983_i2c_data *data = NULL;
 
-	if (unlikely(this_client == NULL)) {
+	if (unlikely(this_client == NULL)) 
+	{
 		MSE_ERR("this_client is null!\n");
 		return -EINVAL;
 	}
 		
 	data = i2c_get_clientdata(this_client);
-	if (unlikely(data == NULL)) {
+	if (unlikely(data == NULL)) 
+	{
 		MSE_ERR("data is null!\n");
 		return -EINVAL;
 	}
 
 	if(en == 1)
 	{
-		atomic_set(&m_flag, 1);
 		v_open_flag |= 0x01;
-		/// we start measurement at here 
-		//qmcX983_start_measure(this_client);
+		//we start measurement here.
 		qmcX983_enable(this_client);
 	}
 	else
 	{
-		atomic_set(&m_flag, 0);
+		qmcX983_disable(this_client);
 		v_open_flag &= 0x3e;
 	}
-	// check we need stop sensor or not 
-	if(v_open_flag==0)
-		qmcX983_disable(this_client);
-		
+
 	atomic_set(&open_flag, v_open_flag);
 	
-	wake_up(&open_wq);
-
 	MSE_ERR("qmcX983 v_open_flag = 0x%x,open_flag= 0x%x\n",v_open_flag, atomic_read(&open_flag));
 	return 0;
 }
@@ -1522,6 +1155,14 @@ static int qmcX983_m_enable(int en)
 
 static int qmcX983_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
+	int value = 0;
+
+	value = (int)samplingPeriodNs / 1000 / 1000;
+
+	if (value <= 10)
+		qmcd_delay = 10;
+	else
+		qmcd_delay = value;
 	return 0;
 }
 
@@ -1532,10 +1173,9 @@ static int qmcX983_flush(void)
 
 static int qmcX983_m_get_data(int *x, int *y, int *z, int *status)
 {
-    struct timespec time;
 	struct qmcX983_i2c_data *data = NULL;
 	int mag[3];
-	int64_t cur_ns;
+
 	if (unlikely(this_client == NULL)) {
 		MSE_ERR("this_client is null!\n");
 		return -EINVAL;
@@ -1547,19 +1187,12 @@ static int qmcX983_m_get_data(int *x, int *y, int *z, int *status)
 		return -EINVAL;
 	}
 	qmcX983_read_mag_xyz(mag);
-//	mutex_lock(&sensor_data_mutex);
-    g_rawMag[0] = mag[0];
-    g_rawMag[1] = mag[1];
-    g_rawMag[2] = mag[2];
-	*x = mag[0];//sensor_data[4] * CONVERT_M;
-	*y = mag[1];//sensor_data[5] * CONVERT_M;
-	*z = mag[2];//sensor_data[6] * CONVERT_M;
-	*status = 3;//sensor_data[7];
-    time.tv_sec = time.tv_nsec = 0;
-    get_monotonic_boottime(&time);
-    cur_ns = time.tv_sec*1000000000LL+time.tv_nsec;
+	
+	*x = mag[0];
+	*y = mag[1];
+	*z = mag[2];
+	*status = 3;
 
-//	mutex_unlock(&sensor_data_mutex);
 #if DEBUG
 	if(atomic_read(&data->trace) & QMC_HWM_DEBUG)
 	{				
@@ -1569,7 +1202,104 @@ static int qmcX983_m_get_data(int *x, int *y, int *z, int *status)
 
 	return 0;
 }
-#endif
+static int qmcX983_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	struct qmcX983_i2c_data *data = NULL;
+	int en = (enabledisable == true ? 1 : 0);
+	int err;
+    
+	if (unlikely(this_client == NULL)) 
+	{
+		MSE_LOG("this_client is null!\n");
+		return -EINVAL;
+	}
+		
+	data = i2c_get_clientdata(this_client);
+	if (unlikely(data == NULL)) 
+	{
+		MSE_LOG("data is null!\n");
+		return -EINVAL;
+	}
+
+	if(en == 1)
+	{
+		v_open_flag |= 0x01;
+		//we start measurement here.
+		qmcX983_enable(this_client);
+	}
+	else
+	{
+		qmcX983_disable(this_client);
+		v_open_flag &= 0x3e;
+	}
+
+	atomic_set(&open_flag, v_open_flag);
+	
+	MSE_LOG("qmcX983 v_open_flag = 0x%x,open_flag= 0x%x\n",v_open_flag, atomic_read(&open_flag));
+
+	err = qmcX983_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		MSE_LOG("%s enable set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+
+static int qmcX983_factory_get_data(int32_t data[3], int *status)
+{
+	int32_t factory_data[3] = {0};
+	int ret = 0;
+	
+	/* get raw data */
+	ret = qmcX983_m_get_data(&factory_data[0], &factory_data[1], &factory_data[2], status);
+	
+	data[0] = factory_data[0] / 10; //mG to uT
+	data[1] = factory_data[1] / 10; //mG to uT
+	data[2] = factory_data[2] / 10; //mG to uT
+	return  ret;
+}
+static int qmcX983_factory_get_raw_data(int32_t data[3])
+{
+	MSE_LOG("do not support qmcX983_factory_get_raw_data!\n");
+	return 0;
+}
+static int qmcX983_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int qmcX983_factory_clear_cali(void)
+{
+	return 0;
+}
+static int qmcX983_factory_set_cali(int32_t data[3])
+{
+	return 0;
+}
+static int qmcX983_factory_get_cali(int32_t data[3])
+{
+	return 0;
+}
+static int qmcX983_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct mag_factory_fops qmcX983_factory_fops = {
+	.enable_sensor = qmcX983_factory_enable_sensor,
+	.get_data = qmcX983_factory_get_data,
+	.get_raw_data = qmcX983_factory_get_raw_data,
+	.enable_calibration = qmcX983_factory_enable_calibration,
+	.clear_cali = qmcX983_factory_clear_cali,
+	.set_cali = qmcX983_factory_set_cali,
+	.get_cali = qmcX983_factory_get_cali,
+	.do_self_test = qmcX983_factory_do_self_test,
+};
+
+static struct mag_factory_public qmcX983_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &qmcX983_factory_fops,
+};
 
 /*----------------------------------------------------------------------------*/
 #ifndef	CONFIG_HAS_EARLYSUSPEND
@@ -1578,7 +1308,8 @@ static int qmcX983_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct qmcX983_i2c_data *obj = i2c_get_clientdata(client);
-		qmcX983_power(obj->hw, 0);
+    
+	qmcX983_power(&obj->hw, 0);
 
 	return 0;
 }
@@ -1588,8 +1319,14 @@ static int qmcX983_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct qmcX983_i2c_data *obj = i2c_get_clientdata(client);
 	
-	qmcX983_power(obj->hw, 1);
+	qmcX983_power(&obj->hw, 1);
 
+	return 0;
+}
+
+static int qmcX983_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
+{
+	strlcpy(info->type, QMCX983_DEV_NAME, sizeof(info->type));
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
@@ -1605,7 +1342,7 @@ static void qmcX983_early_suspend(struct early_suspend *h)
 		return;
 	}
 	
-	qmcX983_power(obj->hw, 0);
+	qmcX983_power(&obj->hw, 0);
 	
 	if(qmcX983_SetPowerMode(obj->client, false))
 	{
@@ -1625,7 +1362,7 @@ static void qmcX983_late_resume(struct early_suspend *h)
 		return;
 	}
 
-	qmcX983_power(obj->hw, 1);
+	qmcX983_power(&obj->hw, 1);
 	
 	/// we can not start measurement , because we have no single measurement mode 
 
@@ -1697,7 +1434,7 @@ static int qmcX983_device_check(void){
 	return ret;
 }
 
-static int qmcx983_get_OPT(void)
+static int qmcx983_get_OTP(void)
 {
 	unsigned char databuf[2] = {0};
 	unsigned char value[2] = {0};
@@ -1755,6 +1492,24 @@ static int qmcx983_get_OPT(void)
 			MSE_ERR("%s: I2C_RxData failed\n",__func__);
 			return ret;
 		}
+        value[0] = databuf[0];
+		mdelay(10);
+		databuf[0] = 0x2e;
+		databuf[1] = 0x0f;
+		ret = I2C_TxData(databuf,2);
+		if(ret < 0)
+		{
+			MSE_ERR("%s: I2C_TxData failed\n",__func__);
+			return ret;			
+		}
+        mdelay(10);
+		databuf[0] = 0x2f;
+		ret = I2C_RxData(databuf, 1);
+		if(ret < 0)
+		{
+			MSE_ERR("%s: I2C_RxData failed\n",__func__);
+			return ret;
+		}
         value[1] = databuf[0];
 		if((value[0] >> 7) == 1)
 			OTP_Ky = (((value[0]&0x70) >> 4)*4 + (value[1] >> 6))-32;
@@ -1772,11 +1527,10 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
     const char lib_name[64] = "calmodule_qmcX983";
 
 	int err = 0;
-#ifdef QMCX983_M_NEW_ARCH
+
 	struct mag_control_path mag_ctl = {0};
 	struct mag_data_path mag_data = {0};
-#endif
-	
+
 	MSE_FUN();
 
 	data = kmalloc(sizeof(struct qmcX983_i2c_data), GFP_KERNEL);
@@ -1786,32 +1540,26 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit;
 	}
 
-
-	err = get_mag_dts_func(client->dev.of_node, qst_hw);
+	err = get_mag_dts_func(client->dev.of_node, &data->hw);
 	if (err < 0) {
-		MSE_ERR("qmcX983_i2c_probe. get dts info fail\n");
+		MSE_ERR("%s. get dts info fail\n",__FUNCTION__);
+		err = -EFAULT;
 		goto exit_kfree;
 	}
 
-	memset(data, 0, sizeof(struct qmcX983_i2c_data));
-
-	data->hw = qst_hw;
-
-	if (hwmsen_get_convert(data->hw->direction, &data->cvt)) {
-        	MSE_ERR("QMCX983 invalid direction: %d\n", data->hw->direction);
-        	goto exit_kfree;
+	err = hwmsen_get_convert(data->hw.direction, &data->cvt);	
+	if (err) {
+		MSE_ERR("QMCX983 invalid direction: %d\n", data->hw.direction);
+		goto exit_kfree;
 	}
-	MSE_ERR("QMCX983 direction: %d\n", data->hw->direction);
-	atomic_set(&data->layout, data->hw->direction);
-
+	
+	atomic_set(&data->layout, data->hw.direction);
+	MSE_LOG("%s: direction: %d\n",__FUNCTION__,data->hw.direction);
 	atomic_set(&data->trace, 0);
+
 
 	mutex_init(&sensor_data_mutex);
 	mutex_init(&read_i2c_xyz);
-	mutex_init(&accel_mutex);
-	
-	init_waitqueue_head(&data_ready_wq);
-	init_waitqueue_head(&open_wq);
 
 	data->client = client;
 	new_client = data->client;
@@ -1823,18 +1571,18 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	err = qmcX983_device_check();
 	if(err < 0)
 	{
-		MSE_LOG("QMCX983 check ID faild!\n");
+		MSE_LOG("%s check ID faild!\n",__FUNCTION__);
 		goto exit_kfree;
 	}
-	err = qmcx983_get_OPT();
+	err = qmcx983_get_OTP();
 	if(err < 0)
 	{
-		MSE_LOG("QMCX983 get OPTfaild!\n");
+		MSE_LOG("%s get OTP faild!\n",__FUNCTION__);
 		goto exit_kfree;
 	}
-#ifdef QMCX983_M_NEW_ARCH
+
 	err = qmcX983_create_attr(&(qmcX983_init_info.platform_diver_addr->driver));
-#endif
+
 	if (err < 0)
 	{
 		MSE_ERR("create attribute err = %d\n", err);
@@ -1848,17 +1596,24 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		MSE_ERR("qmcX983_device register failed\n");
 		goto exit_misc_device_register_failed;	
 	}
-#ifdef QMCX983_M_NEW_ARCH
+	
+	err = mag_factory_device_register(&qmcX983_factory_device);
+	if (err) {
+		MSE_ERR("misc device register failed, err = %d\n", err);
+		goto exit_misc_factory_device_register_failed;
+	}
+	
 	mag_ctl.enable = qmcX983_m_enable;
 	mag_ctl.set_delay = qmcX983_m_set_delay;
 	mag_ctl.open_report_data = qmcX983_m_open_report_data;
 	mag_ctl.is_report_input_direct = false;
-	mag_ctl.is_support_batch = data->hw->is_batch_supported;
+	mag_ctl.is_support_batch = data->hw.is_batch_supported;
 	mag_ctl.batch = qmcX983_batch;
 	mag_ctl.flush = qmcX983_flush;
 	mag_ctl.libinfo.deviceid = chip_id;
-	mag_ctl.libinfo.layout = qst_hw->direction;
-    memcpy(mag_ctl.libinfo.libname,lib_name,sizeof(lib_name));
+	mag_ctl.libinfo.layout = data->hw.direction;
+    	memcpy(mag_ctl.libinfo.libname,lib_name,sizeof(lib_name));
+	mag_ctl.libinfo.layout = qmcX983_SetCert();
 	err = mag_register_control_path(&mag_ctl);
 	if (err) {
 		MAG_PR_ERR("register mag control path err\n");
@@ -1871,8 +1626,6 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		MAG_PR_ERR("register data control path err\n");
 		goto exit_hwm_attach_failed;
 	}
-#endif
-	
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	data->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 1,
@@ -1881,18 +1634,17 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	register_early_suspend(&data->early_drv);
 #endif
 	
-#ifdef QMCX983_M_NEW_ARCH
-    qmcX983_init_flag = 1;
-#endif
+    qmcX983_init_flag = 0;
+
 	MSE_LOG("%s: OK\n", __func__);
 	return 0;
 
 exit_hwm_attach_failed:
+	mag_factory_device_deregister(&qmcX983_factory_device);
+exit_misc_factory_device_register_failed:
 	misc_deregister(&qmcX983_device);
 exit_misc_device_register_failed:
-#ifdef QMCX983_M_NEW_ARCH
 	qmcX983_delete_attr(&(qmcX983_init_info.platform_diver_addr->driver));
-#endif	
 exit_sysfs_create_group_failed:
 exit_kfree:
 	kfree(data);
@@ -1902,20 +1654,14 @@ exit:
 }
 /*----------------------------------------------------------------------------*/
 
-static int qmcX983_i2c_detect(struct i2c_client *client, struct i2c_board_info *info)
-{
-    strcpy(info->type, QMCX983_DEV_NAME);
-    return 0;
-}
 
 
 static int qmcX983_i2c_remove(struct i2c_client *client)
 {
 	int err;
 
-#ifdef QMCX983_M_NEW_ARCH
 	err = qmcX983_delete_attr(&(qmcX983_init_info.platform_diver_addr->driver));
-#endif
+
 	if (err < 0)
 	{
 		MSE_ERR("qmcX983_delete_attr fail: %d\n", err);
@@ -1925,9 +1671,10 @@ static int qmcX983_i2c_remove(struct i2c_client *client)
 	i2c_unregister_device(client);
 	kfree(i2c_get_clientdata(client));
 	misc_deregister(&qmcX983_device);
+	mag_factory_device_deregister(&qmcX983_factory_device);
 	return 0;
 }
-#ifdef QMCX983_M_NEW_ARCH
+
 static int qmcX983_local_init(void)
 {
 
@@ -1952,7 +1699,7 @@ static int qmcX983_local_init(void)
 }
 
 
-static int qmcX983_remove(void)
+static int qmcX983_local_remove(void)
 {
 
 	qmcX983_power(qst_hw, 0);
@@ -1961,32 +1708,20 @@ static int qmcX983_remove(void)
 	return 0;
 }
 
-#endif
 
 /*----------------------------------------------------------------------------*/
 static int __init qmcX983_init(void)
 {
-  int ret = 0;
-  struct device_node *node = NULL;
-  const char *name = "mediatek,msensor";
-
-  node = of_find_compatible_node(NULL,NULL,name);
-
-  ret = get_mag_dts_func(node, qst_hw);
-  if (ret < 0)
-    MSE_ERR("get dts info fail!\n");
-
+  
 	mag_driver_add(&qmcX983_init_info);
-
+	
 	return 0;
 }
 
 /*----------------------------------------------------------------------------*/
 static void __exit qmcX983_exit(void)
 {
-#ifndef QMCX983_M_NEW_ARCH
-	platform_driver_unregister(&qmc_sensor_driver);
-#endif
+
 }
 /*----------------------------------------------------------------------------*/
 module_init(qmcX983_init);

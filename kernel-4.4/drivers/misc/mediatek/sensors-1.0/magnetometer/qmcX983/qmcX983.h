@@ -2,8 +2,8 @@
  * Definitions for qmc6983 magnetic sensor chip.
  */
 	 
-#ifndef __QMC6983_H__
-#define __QMC6983_H__
+#ifndef __QMCX983_H__
+#define __QMCX983_H__
 	 
 #include <linux/ioctl.h>  /* For IOCTL macros */
 
@@ -17,38 +17,9 @@
 /* IOCTLs for QMC library */
 #define QMC_IOCTL_WRITE                 _IOW(MSENSOR, 0x40, char*)
 #define QMC_IOCTL_READ                  _IOWR(MSENSOR, 0x41, char*)
-#define QMC_IOCTL_RESET              	_IO(MSENSOR, 0x42)
-#define QMC_IOCTL_SET_MODE              _IOW(MSENSOR, 0x43, short)
-#define QMC_IOCTL_GETDATA               _IOR(MSENSOR, 0x44, char[SENSOR_DATA_SIZE])
-#define QMC_IOCTL_SET_YPR               _IOW(MSENSOR, 0x45, short[28])
-#define QMC_IOCTL_GET_OPEN_STATUS       _IOR(MSENSOR, 0x46, int)
-#define QMC_IOCTL_GET_CLOSE_STATUS      _IOR(MSENSOR, 0x47, int)
-#define QMC_IOC_GET_MFLAG               _IOR(MSENSOR, 0x48, int)
-#define QMC_IOC_GET_OFLAG               _IOR(MSENSOR, 0x49, int)
-#define QMC_IOCTL_GET_DELAY             _IOR(MSENSOR, 0x4a, short)
-#define QMC_IOCTL_GET_ACCEL				_IOR(MSENSOR, 0x4b, short[3])
 #endif
 
-#define QMC6983_IOCTL_BASE 'm'
-	 /* The following define the IOCTL command values via the ioctl macros */
-#define QMCX983_SET_RANGE		_IOW(QMC6983_IOCTL_BASE, 1, int)
-#define QMCX983_SET_MODE		_IOW(QMC6983_IOCTL_BASE, 2, int)
-#define QMCX983_SET_BANDWIDTH	_IOW(QMC6983_IOCTL_BASE, 3, int)
-#define QMCX983_READ_MAGN_XYZ	_IOR(QMC6983_IOCTL_BASE, 4, int)	
-#define QMCX983_SET_REGISTER_A	_IOW(QMC6983_IOCTL_BASE, 5, char *)
-#define QMCX983_SELF_TEST	   _IOWR(QMC6983_IOCTL_BASE, 6, char *)
-
-#ifdef CONFIG_COMPAT
-#define COMPAT_QMCX983_SET_RANGE		_IOW(QMC6983_IOCTL_BASE, 1, compat_int_t)
-#define COMPAT_QMCX983_SET_MODE		_IOW(QMC6983_IOCTL_BASE, 2, compat_int_t)
-#define COMPAT_QMCX983_SET_BANDWIDTH	_IOW(QMC6983_IOCTL_BASE, 3, compat_int_t)
-#define COMPAT_QMCX983_READ_MAGN_XYZ	_IOR(QMC6983_IOCTL_BASE, 4, compat_int_t)	
-#define COMPAT_QMCX983_SET_REGISTER_A	_IOW(QMC6983_IOCTL_BASE, 5, compat_uptr_t)
-#define COMPAT_QMCX983_SELF_TEST	   _IOWR(QMC6983_IOCTL_BASE, 6, compat_uptr_t)
-#endif
 //extern struct mag_hw* qmcX983_get_cust_mag_hw(void);
-
-
 /*-------------------------------------------------------------------*/
 	 /* Magnetometer registers mapping */
 
@@ -125,19 +96,12 @@
 #define OVERSAMPLE_RATIO_64 	0x03
 
 
-  #define SAMPLE_AVERAGE_8		(0x3 << 5)
-  #define OUTPUT_RATE_75		(0x6 << 2)
-  #define MEASURE_NORMAL		0
-  #define MEASURE_SELFTEST		0x1
+#define SAMPLE_AVERAGE_8		(0x3 << 5)
+#define OUTPUT_RATE_75		(0x6 << 2)
+#define MEASURE_NORMAL		0
+#define MEASURE_SELFTEST		0x1
 #define GAIN_DEFAULT		  (3 << 5)
 
-
-// conversion of magnetic data (for bmm050) to uT units
-// conversion of magnetic data to uT units
-// 32768 = 1Guass = 100 uT
-// 100 / 32768 = 25 / 8096
-// 65536 = 360Degree
-// 360 / 65536 = 45 / 8192
 #define CONVERT_M			6
 #define CONVERT_M_DIV		1//100			// 6/100 = CONVERT_M
 #define CONVERT_O			1
@@ -146,5 +110,5 @@
 #define CONVERT_Q16_DIV		65536		// 1/64 = CONVERT_Gyro
 	 
 	 
-#endif  /* __QMC6983_H__ */
+#endif  /* __QMCX983_H__ */
 
