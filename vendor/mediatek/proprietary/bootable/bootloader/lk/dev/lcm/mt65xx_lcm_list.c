@@ -48,6 +48,7 @@
 #define LCD_DEBUG(fmt)  printk(fmt)
 #endif
 
+extern LCM_DRIVER nt36672_fhd_dsi_vdo_rt5081_lcm_drv;
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_60hz_lcm_drv;
 extern LCM_DRIVER otm1282a_hd720_dsi_vdo_lcm_drv;
 extern LCM_DRIVER vvx10f008b00_wuxga_dsi_vdo_lcm_drv;
@@ -407,6 +408,9 @@ extern LCM_DRIVER nt36672c_fhdp_dsi_vdo_auo_cphy_90hz_tianma_hfp_lcm_drv;
 
 LCM_DRIVER *lcm_driver_list[] = {
 
+#if defined(NT36672_FHD_DSI_VDO_RT5081)
+	&nt36672_fhd_dsi_vdo_rt5081_lcm_drv,
+#endif
 #if defined(NT36672AH_HDP_DSI_VDO_TCL_CSOT)
 	&nt36672ah_hdp_dsi_vdo_tcl_csot_lcm_drv,
 #endif
