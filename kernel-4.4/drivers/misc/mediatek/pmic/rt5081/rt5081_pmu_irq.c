@@ -363,14 +363,7 @@ int rt5081_pmu_irq_register(struct rt5081_pmu_chip *chip)
 	ret = rt5081_pmu_irq_init(chip);
 	if (ret < 0)
 		return ret;
-	/*************lk.bin can`t set right settings for this pin --- only for GOME U7 temp fix*****************/
-	mt_set_gpio_mode(0x80000000+pdata->intr_gpio ,0);
-	mt_set_gpio_dir(0x80000000+pdata->intr_gpio ,0);
-	mt_set_gpio_pull_enable(0x80000000+pdata->intr_gpio ,1);
-	mt_set_gpio_pull_select(0x80000000+pdata->intr_gpio ,1);
-	mt_set_gpio_out(0x80000000+pdata->intr_gpio ,0);
-	mt_set_gpio_smt(0x80000000+pdata->intr_gpio ,0);
-	/*******************************************************************************************/
+
 	ret = gpio_request_one(pdata->intr_gpio, GPIOF_IN,
 			       "rt5081_pmu_irq_gpio");
 	if (ret < 0) {
