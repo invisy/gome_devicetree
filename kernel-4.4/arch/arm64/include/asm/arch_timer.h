@@ -61,7 +61,7 @@ void arch_timer_reg_write_cp15(int access, enum arch_timer_reg reg, u32 val)
 static __always_inline
 u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 {
-	u32 val;
+	u32 val = 0;
 
 	if (access == ARCH_TIMER_PHYS_ACCESS) {
 		switch (reg) {
@@ -88,7 +88,7 @@ u32 arch_timer_reg_read_cp15(int access, enum arch_timer_reg reg)
 
 static inline u32 arch_timer_get_cntfrq(void)
 {
-	u32 val;
+	u32 val = 0;
 	asm volatile("mrs %0,   cntfrq_el0" : "=r" (val));
 	return val;
 }
