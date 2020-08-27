@@ -156,7 +156,7 @@ static int rt5081_verify_level(int level)
 }
 
 /* flashlight enable function */
-static int rt5081_enable(void)
+/*static int rt5081_enable(void)
 {
 	int ret = 0;
 	enum flashlight_mode mode = FLASHLIGHT_MODE_TORCH;
@@ -166,12 +166,12 @@ static int rt5081_enable(void)
 		return -1;
 	}
 
-	/* set flash mode if any channel is flash mode */
+	// set flash mode if any channel is flash mode 
 	if ((rt5081_en_ch1 == RT5081_ENABLE_FLASH)
 			|| (rt5081_en_ch2 == RT5081_ENABLE_FLASH))
 		mode = FLASHLIGHT_MODE_FLASH;
 
-	/* enable channel 1 and channel 2 */
+	// enable channel 1 and channel 2
 	if (rt5081_en_ch1)
 		ret |= flashlight_set_mode(
 				flashlight_dev_ch1, mode);
@@ -189,6 +189,33 @@ static int rt5081_enable(void)
 		pr_err("Failed to enable.\n");
 
 	return ret;
+}*/
+
+static int rt5081_enable(void)
+{
+	int ret = 0;
+	enum flashlight_mode mode = FLASHLIGHT_MODE_TORCH;
+
+	if (!flashlight_dev_ch1) {
+		pr_err("Failed to enable since no flashlight device.\n");
+		return -1;
+	}
+
+	// set flash mode if channel 1 is flash mode 
+	if (rt5081_en_ch1 == RT5081_ENABLE_FLASH)
+		mode = FLASHLIGHT_MODE_FLASH;
+
+	// enable channel 1
+	if (rt5081_en_ch1)
+		ret |= flashlight_set_mode(
+				flashlight_dev_ch1, mode);
+	else
+		ret |= flashlight_set_mode(
+				flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
+	if (ret < 0)
+		pr_err("Failed to enable.\n");
+
+	return ret;
 }
 
 /* flashlight disable function */
@@ -196,14 +223,22 @@ static int rt5081_disable(void)
 {
 	int ret = 0;
 
-	if (!flashlight_dev_ch1 || !flashlight_dev_ch2) {
+	/*if (!flashlight_dev_ch1 || !flashlight_dev_ch2) {
 		pr_err("Failed to disable since no flashlight device.\n");
 		return -1;
 	}
 
-	/* disable channel 1 and channel 2 */
+	// disable channel 1 and channel 2 
 	ret |= flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
-	ret |= flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_OFF);
+	ret |= flashlight_set_mode(flashlight_dev_ch2, FLASHLIGHT_MODE_OFF); */
+	
+	if (!flashlight_dev_ch1) {
+		pr_err("Failed to disable since no flashlight device.\n");
+		return -1;
+	}
+
+	// disable channel 1
+	ret |= flashlight_set_mode(flashlight_dev_ch1, FLASHLIGHT_MODE_OFF);
 
 	if (ret < 0)
 		pr_err("Failed to disable.\n");
@@ -232,7 +267,7 @@ static int rt5081_set_level_ch1(int level)
 	return 0;
 }
 
-static int rt5081_set_level_ch2(int level)
+/* static int rt5081_set_level_ch2(int level)
 {
 	level = rt5081_verify_level(level);
 	rt5081_level_ch2 = level;
@@ -242,7 +277,7 @@ static int rt5081_set_level_ch2(int level)
 		return -1;
 	}
 
-	/* set brightness level */
+	// set brightness level
 	if (!rt5081_is_torch(level))
 		flashlight_set_torch_brightness(
 				flashlight_dev_ch2, rt5081_torch_level[level]);
@@ -250,14 +285,14 @@ static int rt5081_set_level_ch2(int level)
 			flashlight_dev_ch2, rt5081_strobe_level[level]);
 
 	return 0;
-}
+} */
 
 static int rt5081_set_level(int channel, int level)
 {
 	if (channel == RT5081_CHANNEL_CH1)
 		rt5081_set_level_ch1(level);
-	else if (channel == RT5081_CHANNEL_CH2)
-		rt5081_set_level_ch2(level);
+	//else if (channel == RT5081_CHANNEL_CH2)
+		//rt5081_set_level_ch2(level);
 	else {
 		pr_err("Error channel\n");
 		return -1;
