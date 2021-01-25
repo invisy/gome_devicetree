@@ -810,7 +810,7 @@
 	bcm2079x@76 {
 		reg = <0x76>;
 		compatible = "mediatek,bcm2079x-i2c";
-		interrupt-parent = <0x10>;
+		interrupt-parent = <&eintc>;
 		interrupts = <0x52 0x8>;
 		debounce = <0x52 0x0>;
 		en-gpio = <&pio 83 0>;

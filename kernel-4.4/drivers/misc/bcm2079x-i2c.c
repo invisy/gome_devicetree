@@ -66,6 +66,17 @@ struct bcm2079x_dev {
 	unsigned int count_irq;
 };
 
+static void bcm2079x_disable_irq(struct bcm2079x_dev *bcm2079x_dev)
+{
+	unsigned long flags;
+	spin_lock_irqsave(&bcm2079x_dev->irq_enabled_lock, flags);
+	if (bcm2079x_dev->irq_enabled) {
+		disable_irq_nosync(bcm2079x_dev->client->irq);
+		bcm2079x_dev->irq_enabled = false;
+	}
+	spin_unlock_irqrestore(&bcm2079x_dev->irq_enabled_lock, flags);
+}
+
 static void bcm2079x_enable_irq(struct bcm2079x_dev *bcm2079x_dev)
 {
 	unsigned long flags;
@@ -74,7 +85,7 @@ static void bcm2079x_enable_irq(struct bcm2079x_dev *bcm2079x_dev)
 		bcm2079x_dev->irq_enabled = true;
 		bcm2079x_dev->count_irq = 0;
 		enable_irq(bcm2079x_dev->client->irq);
-		enable_irq_wake(bcm2079x_dev->client->irq);
+											 
 	}
 	spin_unlock_irqrestore(&bcm2079x_dev->irq_enabled_lock, flags);
 }
@@ -83,6 +94,8 @@ static irqreturn_t bcm2079x_dev_irq_handler(int irq, void *dev_id)
 {
 	struct bcm2079x_dev *bcm2079x_dev = dev_id;
 	unsigned long flags;
+	dev_info(&bcm2079x_dev->client->dev,
+            "irq_handler have catched irq");
 
 	spin_lock_irqsave(&bcm2079x_dev->irq_enabled_lock, flags);
 	bcm2079x_dev->count_irq++;
@@ -98,17 +111,25 @@ static unsigned int bcm2079x_dev_poll(struct file *filp, poll_table *wait)
 	unsigned int mask = 0;
 	unsigned long flags;
 
-
 	poll_wait(filp, &bcm2079x_dev->read_wq, wait);
 
-	spin_lock_irqsave(&bcm2079x_dev->irq_enabled_lock, flags);
+														   
 
+	if (bcm2079x_dev->count_irq > 1)
+        dev_err(&bcm2079x_dev->client->dev,
+            "dev_poll err count_irq=\%d*****\n", bcm2079x_dev->count_irq);
+	else
+		dev_info(&bcm2079x_dev->client->dev,
+            "dev_poll count_irq=\%d*****\n", bcm2079x_dev->count_irq);
+			
+	spin_lock_irqsave(&bcm2079x_dev->irq_enabled_lock, flags);
 	if (bcm2079x_dev->count_irq > 0)
 	{
 		bcm2079x_dev->count_irq--;
 		mask |= POLLIN | POLLRDNORM;
 	}
 	spin_unlock_irqrestore(&bcm2079x_dev->irq_enabled_lock, flags);
+																
 	return mask;
 }
 
@@ -323,11 +344,7 @@ static int bcm2079x_probe(struct i2c_client *client,
 	if (ret)
 		goto err_firm;
 	gpio_direction_output(platform_data->wake_gpio, 0);
-
-
-	gpio_set_value_cansleep(platform_data->en_gpio, 0);
-	gpio_set_value_cansleep(platform_data->wake_gpio, 1);
-
+													  
 	bcm2079x_dev = kzalloc(sizeof(*bcm2079x_dev), GFP_KERNEL);
 	if (bcm2079x_dev == NULL) {
 		dev_err(&client->dev,
@@ -372,10 +389,12 @@ static int bcm2079x_probe(struct i2c_client *client,
 		dev_err(&client->dev, "request_irq failed\n");
 		goto err_request_irq_failed;
 	}
+	
+	bcm2079x_disable_irq(bcm2079x_dev);
 	i2c_set_clientdata(client, bcm2079x_dev);
 
-	bcm2079x_dev->irq_enabled = false;
-	disable_irq_nosync(bcm2079x_dev->client->irq);
+								   
+											   
 
 	dev_info(&client->dev,
 		 "%s, probing bcm2079x driver exited successfully\n",
