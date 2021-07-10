@@ -172,7 +172,8 @@ DEVICE_MANIFEST_FILE += device/gome/u7/project_manifest/manifest_nfc.xml
 PRODUCT_COPY_FILES += \
     frameworks/native/data/etc/android.hardware.nfc.hce.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.nfc.hce.xml \
     frameworks/native/data/etc/android.hardware.nfc.hcef.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.nfc.hcef.xml \
-    frameworks/native/data/etc/android.hardware.nfc.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.nfc.xml
+    frameworks/native/data/etc/android.hardware.nfc.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/android.hardware.nfc.xml \
+    frameworks/native/data/etc/com.nxp.mifare.xml:$(TARGET_COPY_OUT_VENDOR)/etc/permissions/com.nxp.mifare.xml
 
 # nfc packages
 PRODUCT_PACKAGES += \
@@ -185,10 +186,8 @@ PRODUCT_PACKAGES += \
 	
 # NFC config files
 PRODUCT_COPY_FILES += \
-    $(LOCAL_PATH)/nfc/etc/libnfc-nci.conf:vendor/etc/libnfc-nci.conf \
-    $(LOCAL_PATH)/nfc/etc/libnfc-nci-20797b00.conf:vendor/etc/libnfc-nci-20797b00.conf \
-	$(LOCAL_PATH)/nfc/etc/libnfc-nci.conf:system/etc/libnfc-brcm.conf \
-    $(LOCAL_PATH)/nfc/etc/libnfc-nci-20797b00.conf:system/etc/libnfc-brcm-20797b00.conf \
+    $(LOCAL_PATH)/nfc/etc/libnfc-nci.conf:$(TARGET_COPY_OUT_VENDOR)/etc/libnfc-nci.conf \
+    $(LOCAL_PATH)/nfc/etc/libnfc-nci-20797b00.conf:$(TARGET_COPY_OUT_VENDOR)/etc/libnfc-nci-20797b00.conf \
     $(LOCAL_PATH)/nfc/firmware/BCM20797B0_002.001.043.0005.0009_Generic_NCD_Unsigned_configdata.ncd:$(TARGET_COPY_OUT_VENDOR)/firmware/BCM20797B0_002.001.043.0005.0009_Generic_NCD_Unsigned_configdata.ncd \
     $(LOCAL_PATH)/nfc/firmware/Generic_unsigned_512_3.ncd:$(TARGET_COPY_OUT_VENDOR)/firmware/Generic_unsigned_512_3.ncd
 
