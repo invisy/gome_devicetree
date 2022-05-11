@@ -12,6 +12,7 @@ Works:
   - Back camera and flashlight
   - Light & proximity sensor
   - Accelerometer & gyroscope
+  - Magnetometer
   - NFC
   - Status light
   
@@ -22,5 +23,4 @@ Doesn`t work:
   - Iris ID
   
 Bugs:
-  - Magnetometer [bug: incorrect values]
   - Agps [bug: network is falling]

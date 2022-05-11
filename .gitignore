@@ -101,6 +101,9 @@
 !/vendor/mediatek/proprietary/hardware/liblights/
 /vendor/mediatek/proprietary/hardware/liblights/*
 !/vendor/mediatek/proprietary/hardware/liblights/lights.c
+!vendor/mediatek/proprietary/hardware/sensor/
+vendor/mediatek/proprietary/hardware/sensor/*
+!vendor/mediatek/proprietary/hardware/sensor/sensors-1.0
 !/hardware/
 /hardware/*
 !/hardware/interfaces/

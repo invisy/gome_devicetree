@@ -22,7 +22,7 @@
 #endif
 
 /*----------------------------------------------------------------------------*/
-#define DEBUG 1
+#define DEBUG 0
 #define QMCX983_DEV_NAME         "qmcX983"
 #define DRIVER_VERSION          "driver version 3.4"
 /*----------------------------------------------------------------------------*/
@@ -461,7 +461,7 @@ static int qmcX983_enable(struct i2c_client *client)
 	qmcX983_start_measure(client);
 
 	qmcX983_set_range(QMCX983_RNG_8G);
-	qmcX983_set_ratio(11);				//the ratio must not be 0, different with qmc5983
+	qmcX983_set_ratio(QMCX983_SETRESET_FREQ_FAST);				//the ratio must not be 0, different with qmc5983
 	usleep_range(20000,30000); //fixit for amr ready
 	qmcX983_start_measure(client);
 
@@ -1546,6 +1546,9 @@ static int qmcX983_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		err = -EFAULT;
 		goto exit_kfree;
 	}
+
+
+	//client->addr = 0x2c;
 
 	err = hwmsen_get_convert(data->hw.direction, &data->cvt);	
 	if (err) {

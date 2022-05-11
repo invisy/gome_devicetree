@@ -28,7 +28,7 @@ struct sensor_t sSensorList[MAX_NUM_SENSORS] =
 		.type       = SENSOR_TYPE_ACCELEROMETER,
 		.maxRange   = 32.0f,
 		.resolution = 4.0f/1024.0f,
-		.power      =130.0f/1000.0f,
+		.power      = 130.0f/1000.0f,
 		.reserved   = {}
 	},	
 };
