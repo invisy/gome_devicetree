@@ -120,3 +120,11 @@ config TS3A225E_ACCDET
 	  If you want to use TS3A225E
 	  say Y here.
 	  If unsure, say N.
+
+config GOME_U7_TYPEC_HEADSET
+	bool "MediaTek mt6355 type headset"
+	---help---
+      mt6355 or rt5081 headset option
+	  If you want to use MT6355
+	  say Y or M here.
+	  If unsure, say N.

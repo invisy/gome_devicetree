@@ -45,6 +45,10 @@
 #include "typec.h"
 #endif
 
+#ifdef CONFIG_GOME_U7_TYPEC_HEADSET
+extern void accdet_plug_func(int plugstate);
+#endif
+
 static DEFINE_MUTEX(param_lock);
 
 static struct tcpc_device *tcpc_dev;
@@ -299,6 +303,14 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mutex_unlock(&pd_chr_mutex);
 			pr_notice("TCP_NOTIFY_SINK_VBUS=> plug in");
 #endif
+#endif
+#ifdef CONFIG_GOME_U7_TYPEC_HEADSET
+		} else if (noti->typec_state.new_state == TYPEC_ATTACHED_AUDIO && noti->typec_state.old_state == TYPEC_UNATTACHED) {
+			pr_info("TYPEC_ATTACHED_AUDIO => plug in\n");
+			accdet_plug_func(1);
+		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_AUDIO && noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			pr_info("TYPEC_ATTACHED_AUDIO => plug out\n");
+			accdet_plug_func(0);
 #endif
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||

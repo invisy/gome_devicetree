@@ -209,6 +209,44 @@
 		/*0--MD_MAX--VOICE_MAX--UP_MAX--DW_MAX*/
 		headset-four-key-threshold = <0 58 121 192 400>;
 		/* ACCDET GPIO standardization ACC mode no use */
+		pinctrl-names = "default", "state_audio_mode", "state_usb_mode", "state_micswitch_high", "state_micswitch_low";
+		pinctrl-0 = <&accdet_pins_default>;
+		pinctrl-1 = <&accdet_audio_mode>;
+		pinctrl-2 = <&accdet_usb_mode>;
+		pinctrl-3 = <&accdet_micswitch_high>;
+		pinctrl-4 = <&accdet_micswitch_low>;
+};
+&pio {
+	accdet_pins_default: accdetdefault {
+	};
+	accdet_audio_mode: accdetaudio@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO12__FUNC_GPIO12>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	accdet_usb_mode: accdetusb@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO12__FUNC_GPIO12>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	accdet_micswitch_high: micswitchhigh@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	accdet_micswitch_low: micswitchlow@0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
 };
 /* accdet end*/
 

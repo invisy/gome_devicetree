@@ -8,6 +8,8 @@ Works:
   - SIM1 & SIM2, mobile data
   - Speakers
   - Microphone
+  - USB headsets
+  - Radio
   - Charger (without PUMP Express), OTG
   - Back camera and flashlight
   - Light & proximity sensor
@@ -17,10 +19,10 @@ Works:
   - Status light
   
 Doesn`t work:
-  - USB Audio
   - Front camera
   - Fingerprint sensor
   - Iris ID
   
-Bugs:
+Known bugs:
   - Agps [bug: network is falling]
+  - Roaming [bug: network is falling, mb is connected to previous bug]

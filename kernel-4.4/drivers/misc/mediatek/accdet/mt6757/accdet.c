@@ -41,7 +41,12 @@
 /* fix record no voice when press key */
 #include "mtk-soc-codec-63xx.h"
 #endif
+
+#ifdef CONFIG_GOME_U7_TYPEC_HEADSET
+#define HW_MODE_SUPPORT		0/* HW path */
+#else
 #define HW_MODE_SUPPORT		1/* HW path */
+#endif
 /*
  * static variable defination
  */
@@ -98,9 +103,16 @@ int cur_eint_state = EINT_PIN_PLUG_OUT;
 static struct work_struct accdet_disable_work;
 static struct workqueue_struct *accdet_disable_workqueue;
 
-#ifndef CONFIG_ACCDET_EINT_IRQ
+#if defined CONFIG_ACCDET_EINT || defined CONFIG_ACCDET_EINT_IRQ
 struct pinctrl *accdet_pinctrl1;
 struct pinctrl_state *pins_eint_int;
+#ifdef CONFIG_GOME_U7_TYPEC_HEADSET
+struct pinctrl_state *pins_audio_mode;
+struct pinctrl_state *pins_usb_mode;
+struct pinctrl_state *pins_micswitch_high;
+struct pinctrl_state *pins_micswitch_low;
+static int mic_pin_recognition;
+#endif
 #endif
 
 #ifdef DEBUG_THREAD
@@ -526,6 +538,7 @@ static irqreturn_t accdet_eint_func(int irq, void *data)
 	ret = queue_work(accdet_eint_workqueue, &accdet_eint_work);
 	return IRQ_HANDLED;
 }
+
 #ifndef CONFIG_ACCDET_EINT_IRQ
 static inline int accdet_setup_eint(struct platform_device *accdet_device)
 {
@@ -556,6 +569,7 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_eint_int!\n");
 		return ret;
 	}
+	
 	pinctrl_select_state(accdet_pinctrl1, pins_eint_int);
 	node = of_find_matching_node(node, accdet_of_match);
 	if (node) {
@@ -578,7 +592,55 @@ static inline int accdet_setup_eint(struct platform_device *accdet_device)
 	}
 	return 0;
 }
+#elif CONFIG_GOME_U7_TYPEC_HEADSET
+static inline int accdet_setup_eint(struct platform_device *accdet_device)
+{
+	int ret;
+	struct pinctrl_state *pins_default;
+
+	/* configure to GPIO function, external interrupt */
+	ACCDET_INFO("[Accdet]accdet_setup_eint\n");
+	accdet_pinctrl1 = devm_pinctrl_get(&accdet_device->dev);
+	if (IS_ERR(accdet_pinctrl1)) {
+		ret = PTR_ERR(accdet_pinctrl1);
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet accdet_pinctrl1!\n");
+		return ret;
+	}
+
+	pins_default = pinctrl_lookup_state(accdet_pinctrl1, "default");
+	if (IS_ERR(pins_default)) {
+		ret = PTR_ERR(pins_default);
+	}
+	
+	pins_audio_mode = pinctrl_lookup_state(accdet_pinctrl1, "state_audio_mode");
+	if (IS_ERR(pins_audio_mode)) {
+		ret = PTR_ERR(pins_audio_mode);
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_audio_mode!\n");
+		return ret;
+	}
+	pins_usb_mode = pinctrl_lookup_state(accdet_pinctrl1, "state_usb_mode");
+	if (IS_ERR(pins_usb_mode)) {
+		ret = PTR_ERR(pins_usb_mode);
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl state_usb_mode!\n");
+		return ret;
+	}
+	pins_micswitch_high = pinctrl_lookup_state(accdet_pinctrl1, "state_micswitch_high");
+	if (IS_ERR(pins_micswitch_high)) {
+		ret = PTR_ERR(pins_micswitch_high);
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl pins_micswitch_high!\n");
+		return ret;
+	}
+	pins_micswitch_low = pinctrl_lookup_state(accdet_pinctrl1, "state_micswitch_low");
+	if (IS_ERR(pins_micswitch_low)) {
+		ret = PTR_ERR(pins_micswitch_low);
+		dev_err(&accdet_device->dev, "fwq Cannot find accdet pinctrl pins_micswitch_low!\n");
+		return ret;
+	}
+	
+	return 0;
+}
 #endif/* CONFIG_ACCDET_EINT_IRQ */
+
 
 #define KEY_SAMPLE_PERIOD        (60)	/* ms */
 #define MULTIKEY_ADC_CHANNEL	 (8)
@@ -808,9 +870,9 @@ static inline void check_cable_type(void)
 	int pin_adc_value = 0;
 #define PIN_ADC_CHANNEL 5
 #endif
+
 	current_status = ((pmic_pwrap_read(ACCDET_STATE_RG) & 0xc0) >> 6);	/* A=bit1; B=bit0 */
-	ACCDET_DEBUG("[Accdet]accdet interrupt happen:[%s]current AB = %d\n",
-		     accdet_status_string[accdet_status], current_status);
+	ACCDET_DEBUG("[Accdet]accdet interrupt happen:[%s]current AB = %d\n", accdet_status_string[accdet_status], current_status);
 	button_status = 0;
 	pre_status = accdet_status;
 	/* ACCDET_DEBUG("[Accdet]check_cable_type: ACCDET_IRQ_STS = 0x%x\n", pmic_pwrap_read(ACCDET_IRQ_STS)); */
@@ -864,6 +926,14 @@ static inline void check_cable_type(void)
 			if (eint_accdet_sync_flag == 1) {
 				cable_type = HEADSET_NO_MIC;
 				accdet_status = HOOK_SWITCH;
+#ifdef CONFIG_GOME_U7_TYPEC_HEADSET
+				if(!mic_pin_recognition)
+				{
+					ACCDET_DEBUG("[Accdet]Enable microphone pinctrl!\n");
+					mic_pin_recognition = 1;
+					pinctrl_select_state(accdet_pinctrl1, pins_micswitch_high);
+				}
+#endif
 			} else {
 				ACCDET_DEBUG("[Accdet] Headset has plugged out\n");
 			}
@@ -1310,8 +1380,10 @@ static inline void accdet_init(void)
 
 	if (accdet_dts_data.accdet_mic_mode == 1)	/* ACC mode */
 		ACCDET_INFO("[accdet]init mode1\n");
-	else if (accdet_dts_data.accdet_mic_mode == 2)	/* Low cost mode without internal bias */
+	else if (accdet_dts_data.accdet_mic_mode == 2) {	/* Low cost mode without internal bias */
 		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | RG_EINT_ANA_CONFIG);
+		ACCDET_INFO("[accdet]init mode2\n");
+	}
 	else if (accdet_dts_data.accdet_mic_mode == 6) {	/* Low cost mode with internal bias */
 		pmic_pwrap_write(ACCDET_ADC_REG, pmic_pwrap_read(ACCDET_ADC_REG) | RG_EINT_ANA_CONFIG);
 		pmic_pwrap_write(ACCDET_MICBIAS_REG, pmic_pwrap_read(ACCDET_MICBIAS_REG)|RG_MICBIAS1DCSWPEN);
@@ -1661,6 +1733,34 @@ void accdet_eint_int_handler(void)
 		ACCDET_DEBUG("[accdet_int_handler] don't finished\n");
 }
 
+#ifdef CONFIG_GOME_U7_TYPEC_HEADSET
+void accdet_eint_call()
+{
+	pmic_pwrap_write(ACCDET_IRQ_STS, pmic_pwrap_read(ACCDET_IRQ_STS) & (~IRQ_EINT_CLR_BIT));
+	pmic_pwrap_write(INT_STATUS_ACCDET, RG_INT_STATUS_ACCDET_EINT);
+	accdet_eint_func(accdet_irq, NULL);
+}
+
+void accdet_plug_func(int plugstate)
+{
+	ACCDET_DEBUG("[Accdet]accdet_plug_func start!!!!!!\n");
+	
+	if (plugstate == EINT_PIN_PLUG_IN) {
+		pinctrl_select_state(accdet_pinctrl1, pins_audio_mode);
+		pinctrl_select_state(accdet_pinctrl1, pins_micswitch_low);
+		mdelay(50);
+		accdet_eint_call();
+	} else {
+		accdet_eint_call();
+		pinctrl_select_state(accdet_pinctrl1, pins_usb_mode);
+		pinctrl_select_state(accdet_pinctrl1, pins_micswitch_low);
+		mic_pin_recognition = 0;
+	}
+	
+	ACCDET_DEBUG("[Accdet] accdet_plug_func end, cur_eint_state=%d\n", cur_eint_state);
+}
+#endif
+
 /* just be called by audio module for DC trim */
 void accdet_late_init(unsigned long a)
 {
@@ -1789,6 +1889,10 @@ int mt_accdet_probe(struct platform_device *dev)
 		INIT_WORK(&accdet_disable_work, disable_micbias_callback);
 		accdet_eint_workqueue = create_singlethread_workqueue("accdet_eint");
 		INIT_WORK(&accdet_eint_work, accdet_eint_work_callback);
+		accdet_setup_eint(dev);
+#endif
+#ifdef CONFIG_GOME_U7_TYPEC_HEADSET
+		eint_accdet_sync_flag = 0;
 		accdet_setup_eint(dev);
 #endif
 		accdet_pmic_Read_Efuse_HPOffset();
